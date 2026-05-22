@@ -11,15 +11,26 @@ import { ListarCamareros } from "./application/ListarCamareros.js";
 import { ObtenerCamarero } from "./application/ObtenerCamarero.js";
 import { CamareroController } from "./presentation/camareroController.js";
 import { camareroRoutes } from "./presentation/camareroRoutes.js";
-import type { Camarero } from "./domain/Camarero.js";
+import type { EstadoCuentaCamarero } from "./domain/Camarero.js";
+
+/**
+ * DTO con la informacion minima que otros modulos necesitan saber de un
+ * Camarero. NO se expone la entidad de dominio para no crear dependencias
+ * cross-context sobre los internals de staff (ver CLAUDE.md seccion 1.2).
+ */
+export interface CamareroInfo {
+  id: string;
+  estadoCuenta: EstadoCuentaCamarero;
+  puedeAceptarServicios: boolean;
+}
 
 /**
  * API publica del modulo Staff (consumible por otros modulos via composicion).
- * - `obtenerCamarero` se usara desde bookings para validar que un camarero
+ * - `obtenerCamareroInfo` se usa desde bookings para validar que un camarero
  *   esta ACTIVO antes de permitirle aceptar un servicio.
  */
 export interface StaffPublicApi {
-  obtenerCamarero(id: string): Promise<Camarero>;
+  obtenerCamareroInfo(id: string): Promise<CamareroInfo>;
 }
 
 export interface StaffModuleDeps {
@@ -54,7 +65,14 @@ export function buildStaffModule(deps: StaffModuleDeps): StaffModule {
   return {
     routes,
     publicApi: {
-      obtenerCamarero: (id) => obtenerUC.execute(id),
+      async obtenerCamareroInfo(id) {
+        const c = await obtenerUC.execute(id);
+        return {
+          id: c.id,
+          estadoCuenta: c.estadoCuenta,
+          puedeAceptarServicios: c.puedeAceptarServicios,
+        };
+      },
     },
   };
 }

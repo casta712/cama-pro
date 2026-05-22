@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { buildIdentityModule, type IdentityModule } from "./identity/index.js";
 import { buildStaffModule, type StaffModule } from "./staff/index.js";
+import { buildBookingsModule, type BookingsModule } from "./bookings/index.js";
 
 /**
  * Wiring central de modulos.
@@ -10,6 +11,7 @@ import { buildStaffModule, type StaffModule } from "./staff/index.js";
 export interface AppModules {
   identity: IdentityModule;
   staff: StaffModule;
+  bookings: BookingsModule;
 }
 
 export function buildModules(prisma: PrismaClient): AppModules {
@@ -23,8 +25,16 @@ export function buildModules(prisma: PrismaClient): AppModules {
     requireGestor: identity.middleware.requireRol("GESTOR"),
   });
 
-  // Proxima tarea:
-  // const bookings = buildBookingsModule({ prisma, staffPublicApi: staff.publicApi, ... });
+  const bookings = buildBookingsModule({
+    prisma,
+    verificarCamarero: (camareroId) =>
+      staff.publicApi
+        .obtenerCamareroInfo(camareroId)
+        .then((c) => ({ puedeAceptarServicios: c.puedeAceptarServicios })),
+    authMiddleware: identity.middleware.auth,
+    requireGestor: identity.middleware.requireRol("GESTOR"),
+    requireCamarero: identity.middleware.requireRol("CAMARERO"),
+  });
 
-  return { identity, staff };
+  return { identity, staff, bookings };
 }

@@ -1,0 +1,62 @@
+import { DomainError } from "../../../../shared/errors/DomainError.js";
+import type { EstadoServicio } from "../Servicio.js";
+
+export class FechaInvalidaError extends DomainError {
+  readonly code = "FECHA_INVALIDA";
+  override readonly httpStatus = 400;
+  constructor() {
+    super("La fecha de inicio debe ser futura");
+  }
+}
+
+export class DuracionInvalidaError extends DomainError {
+  readonly code = "DURACION_INVALIDA";
+  override readonly httpStatus = 400;
+  constructor() {
+    super("La duracion debe estar entre 1 y 24 horas");
+  }
+}
+
+export class CuposInvalidosError extends DomainError {
+  readonly code = "CUPOS_INVALIDOS";
+  override readonly httpStatus = 400;
+  constructor() {
+    super("Los cupos totales deben ser entre 1 y 200");
+  }
+}
+
+export class CupoLlenoError extends DomainError {
+  readonly code = "CUPO_LLENO";
+  constructor() {
+    super("Todos los cupos del servicio estan cubiertos");
+  }
+}
+
+export class YaAsignadoError extends DomainError {
+  readonly code = "YA_ASIGNADO";
+  constructor() {
+    super("Ya estas asignado a este servicio");
+  }
+}
+
+export class ServicioNoDisponibleError extends DomainError {
+  readonly code = "SERVICIO_NO_DISPONIBLE";
+  constructor(estado: EstadoServicio) {
+    super(`El servicio no esta disponible para aceptar (estado=${estado})`);
+  }
+}
+
+export class TransicionEstadoInvalidaError extends DomainError {
+  readonly code = "TRANSICION_ESTADO_INVALIDA";
+  constructor(desde: EstadoServicio, hacia: EstadoServicio) {
+    super(`No se puede pasar de ${desde} a ${hacia}`);
+  }
+}
+
+export class CamareroNoActivoError extends DomainError {
+  readonly code = "CAMARERO_NO_ACTIVO";
+  override readonly httpStatus = 403;
+  constructor() {
+    super("Solo camareros activos pueden aceptar servicios");
+  }
+}

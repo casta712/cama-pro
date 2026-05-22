@@ -1,0 +1,125 @@
+import type { Request, Response, NextFunction } from "express";
+import { z } from "zod";
+import {
+  CrearServicioInput as CrearServicioSchema,
+  EstadoServicio as EstadoServicioSchema,
+  type ServicioDTO,
+} from "@cama-pro/shared-types";
+import { UnauthorizedError, ForbiddenError } from "../../../shared/errors/AppError.js";
+import type { Servicio } from "../domain/Servicio.js";
+import type { CrearServicio } from "../application/CrearServicio.js";
+import type { AceptarServicio } from "../application/AceptarServicio.js";
+import type { CancelarServicio } from "../application/CancelarServicio.js";
+import type { ListarServiciosDisponibles } from "../application/ListarServiciosDisponibles.js";
+import type { ListarServiciosDelGestor } from "../application/ListarServiciosDelGestor.js";
+import type { ListarMisAsignaciones } from "../application/ListarMisAsignaciones.js";
+
+const IdParam = z.object({ id: z.string().uuid() });
+const GestorQuery = z.object({ estado: EstadoServicioSchema.optional() });
+
+function toDTO(s: Servicio, camareroId?: string): ServicioDTO {
+  return {
+    id: s.id,
+    fechaInicio: s.fechaInicio.toISOString(),
+    duracionHoras: s.duracionHoras,
+    lugar: s.lugar,
+    tipoEvento: s.tipoEvento,
+    cuposTotales: s.cuposTotales,
+    cuposOcupados: s.cuposOcupados,
+    uniforme: s.uniforme,
+    notas: s.notas,
+    estado: s.estado,
+    ...(camareroId ? { yaAceptado: s.haAceptado(camareroId) } : {}),
+  };
+}
+
+export class ServicioController {
+  constructor(
+    private readonly crear: CrearServicio,
+    private readonly aceptar: AceptarServicio,
+    private readonly cancelar: CancelarServicio,
+    private readonly listarDisponibles: ListarServiciosDisponibles,
+    private readonly listarGestor: ListarServiciosDelGestor,
+    private readonly listarMisAsignaciones: ListarMisAsignaciones,
+  ) {}
+
+  crearHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const raw = CrearServicioSchema.parse(req.body);
+      const servicio = await this.crear.execute({
+        ...raw,
+        fechaInicio: new Date(raw.fechaInicio),
+      });
+      res.status(201).json(toDTO(servicio));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  listarGestorHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const filtro = GestorQuery.parse(req.query);
+      const lista = await this.listarGestor.execute(filtro);
+      res.json(lista.map((s) => toDTO(s)));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  cancelarHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = IdParam.parse(req.params);
+      const servicio = await this.cancelar.execute(id);
+      res.json(toDTO(servicio));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  listarDisponiblesHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.usuario) throw new UnauthorizedError();
+      const camareroId = req.usuario.camareroId;
+      const lista = await this.listarDisponibles.execute();
+      res.json(lista.map((s) => toDTO(s, camareroId ?? undefined)));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  aceptarHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.usuario?.camareroId) {
+        throw new ForbiddenError("Solo camareros pueden aceptar servicios");
+      }
+      const { id } = IdParam.parse(req.params);
+      const { asignacion, servicio } = await this.aceptar.execute({
+        servicioId: id,
+        camareroId: req.usuario.camareroId,
+      });
+      res.status(201).json({
+        asignacion: {
+          id: asignacion.id,
+          camareroId: asignacion.camareroId,
+          servicioId: servicio.id,
+          aceptadaEn: asignacion.aceptadaEn.toISOString(),
+        },
+        servicio: toDTO(servicio, req.usuario.camareroId),
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  misAsignacionesHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.usuario?.camareroId) {
+        throw new ForbiddenError("Solo camareros tienen asignaciones");
+      }
+      const lista = await this.listarMisAsignaciones.execute(req.usuario.camareroId);
+      res.json(lista.map((s) => toDTO(s, req.usuario!.camareroId!)));
+    } catch (err) {
+      next(err);
+    }
+  };
+}
