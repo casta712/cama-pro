@@ -1,0 +1,16 @@
+# Normalizar finales de linea — fuente de verdad: LF
+* text=auto eol=lf
+
+# Binarios — sin conversion
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+
+# Scripts Windows — CRLF nativo
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

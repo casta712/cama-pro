@@ -1,0 +1,111 @@
+// Esquema Prisma — fuente unica de verdad de la BD.
+// Reglas: ver CLAUDE.md seccion 3.2.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================================
+// Modulo: identity
+// =========================================================================
+
+enum Rol {
+  GESTOR
+  CAMARERO
+}
+
+model Usuario {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  rol          Rol
+  camareroId   String?  @unique
+  camarero     Camarero? @relation(fields: [camareroId], references: [id])
+  creadoEn     DateTime @default(now())
+
+  @@map("usuarios")
+}
+
+// =========================================================================
+// Modulo: staff
+// =========================================================================
+
+enum EstadoCuentaCamarero {
+  PENDIENTE_APROBACION
+  ACTIVO
+  SUSPENDIDO
+}
+
+model Camarero {
+  id           String   @id @default(uuid())
+  nombre       String
+  email        String   @unique
+  telefono     String
+  estadoCuenta EstadoCuentaCamarero @default(PENDIENTE_APROBACION)
+  creadoEn     DateTime @default(now())
+
+  usuario      Usuario?
+  asignaciones Asignacion[]
+
+  @@map("camareros")
+}
+
+// =========================================================================
+// Modulo: bookings
+// =========================================================================
+
+enum EstadoServicio {
+  PUBLICADO
+  CUBIERTO
+  EN_CURSO
+  FINALIZADO
+  CANCELADO
+}
+
+enum TipoEvento {
+  BODA
+  CORPORATIVO
+  CENA_PRIVADA
+  COCTEL
+  BANQUETE
+  OTRO
+}
+
+model Servicio {
+  id              String   @id @default(uuid())
+  fechaInicio     DateTime
+  duracionHoras   Int
+  lugarNombre     String
+  lugarDireccion  String
+  tipoEvento      TipoEvento
+  cuposTotales    Int
+  uniforme        String?
+  notas           String?
+  estado          EstadoServicio @default(PUBLICADO)
+  version         Int      @default(0)  // bloqueo optimista
+  creadoEn        DateTime @default(now())
+
+  asignaciones    Asignacion[]
+
+  @@index([estado, fechaInicio])
+  @@map("servicios")
+}
+
+model Asignacion {
+  id          String   @id @default(uuid())
+  servicioId  String
+  camareroId  String
+  aceptadaEn  DateTime @default(now())
+
+  servicio    Servicio @relation(fields: [servicioId], references: [id], onDelete: Cascade)
+  camarero    Camarero @relation(fields: [camareroId], references: [id])
+
+  @@unique([servicioId, camareroId])  // invariante: un camarero, una sola asignacion por servicio
+  @@index([camareroId])
+  @@map("asignaciones")
+}

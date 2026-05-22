@@ -1,0 +1,4 @@
+Carpeta de modulos (bounded contexts). Cada modulo:
+  identity/  staff/  bookings/
+con su propia estructura: domain/ application/ infrastructure/ presentation/.
+Ver CLAUDE.md seccion 1.

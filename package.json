@@ -1,0 +1,28 @@
+{
+  "name": "cama-pro",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma de gestion de camareros para restaurantes y casas de eventos",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:api": "npm run dev --workspace=@cama-pro/api",
+    "dev:web": "npm run dev --workspace=@cama-pro/web",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run db:migrate --workspace=@cama-pro/api",
+    "db:studio": "npm run db:studio --workspace=@cama-pro/api"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
