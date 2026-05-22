@@ -19,7 +19,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   }
 
   if (err instanceof DomainError) {
-    res.status(409).json({ error: err.code, mensaje: err.message });
+    res.status(err.httpStatus).json({ error: err.code, mensaje: err.message });
     return;
   }
 

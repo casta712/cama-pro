@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { env } from "./shared/config/env.js";
 import { errorHandler } from "./shared/http/errorHandler.js";
+import { prisma } from "./shared/infrastructure/prisma.js";
+import { buildModules } from "./modules/index.js";
 
 export function buildServer() {
   const app = express();
@@ -13,12 +15,9 @@ export function buildServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
-  // Rutas de modulos se montan aqui (proximas tareas):
-  // app.use("/api/auth", identityRoutes);
-  // app.use("/api/camareros", staffRoutes);
-  // app.use("/api/servicios", bookingsRoutes);
+  const modules = buildModules(prisma);
+  app.use("/api/auth", modules.identity.routes);
 
   app.use(errorHandler);
-
   return app;
 }
