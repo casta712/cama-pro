@@ -107,13 +107,27 @@ No "ya lo arreglamos despues". **Desde la primera version.**
 
 ## 5. Frontend — reglas especificas
 
+### 5.1 Skills obligatorios (lectura previa a tocar `apps/web/`)
+
+Dos skills viven en `.agents/skills/` y son **lectura obligatoria** antes de escribir o modificar cualquier codigo en `apps/web/`:
+
+- **`.agents/skills/frontend-design/SKILL.md`** — direccion estetica del proyecto.
+  Resumen vinculante: tipografia distintiva (no Inter ni Roboto), color con jerarquia clara (no gradientes morados sobre blanco), motion con proposito (page load orquestado mejor que micro-interacciones dispersas), composicion intencional. **Prohibido el "AI slop" generico.**
+- **`.agents/skills/vercel-react-best-practices/SKILL.md`** — 70 reglas de performance ordenadas por impacto.
+  Aplicar **al menos** las categorias CRITICAL (`async-*`, `bundle-*`) y HIGH (`server-*`). Si una regla concreta aplica al codigo que estas escribiendo, no la ignores con "es solo un MVP".
+
+Si el codigo nuevo no cumple ambos skills, **no esta terminado** (ver seccion 8).
+
+### 5.2 Reglas tecnicas duras
+
 - React + TypeScript estricto. **Cero `any`** tambien aqui.
-- Estado servidor con **React Query** (o equivalente). No `useState` para datos del backend.
+- Estado servidor con **React Query**. No `useState` para datos del backend.
 - Componentes de presentacion **separados** de contenedores con logica. Un componente que hace fetch Y renderiza Y maneja formularios necesita partirse.
 - Validacion de formularios con los Zod schemas de `@cama-pro/shared-types`. **No duplicar reglas** entre front y back.
 - Tailwind para estilos. **No CSS modules ni styled-components.** Decision tomada, no se debate por componente.
 - Mobile-first. Si un componente no funciona en 360px de ancho, no esta terminado.
 - Accesibilidad basica: roles ARIA, labels en inputs, contraste suficiente. No despues, ahora.
+- **Sin barrel imports** (`import { x } from "./lib"` que reexporta todo) — rompen tree-shaking; ver `vercel-react-best-practices/rules/bundle-barrel-imports.md`.
 
 ---
 
@@ -144,7 +158,7 @@ Una tarea esta **terminada** solo si:
 2. Tipa estrictamente (sin `any`, sin `@ts-ignore` sin justificacion en comentario).
 3. Tiene tests donde el punto 4 los exige.
 4. `npm run build` y `npm test` pasan.
-5. Si toca UI: probada manualmente en mobile (devtools 360px) y desktop.
+5. Si toca UI: probada manualmente en mobile (devtools 360px) y desktop, **Y** los dos skills de la seccion 5.1 aplicados (no aspiracionalmente, en el codigo).
 6. Si toca BD: la migracion aplica limpia desde cero (`db:migrate` desde BD vacia).
 
 "Funciona en mi maquina" no es terminado.
