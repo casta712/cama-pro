@@ -17,6 +17,7 @@ export function buildServer() {
 
   const modules = buildModules(prisma);
   app.use("/api/auth", modules.identity.routes);
+  app.use("/api/camareros", modules.staff.routes);
 
   app.use(errorHandler);
   return app;
