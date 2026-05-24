@@ -4,5 +4,6 @@ export type {
   StaffPublicApi,
   StaffModuleDeps,
   CamareroInfo,
+  CamareroContacto,
 } from "./staffModule.js";
 export type { EstadoCuentaCamarero } from "./domain/Camarero.js";

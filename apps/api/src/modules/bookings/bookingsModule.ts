@@ -10,12 +10,17 @@ import { CancelarServicio } from "./application/CancelarServicio.js";
 import { ListarServiciosDisponibles } from "./application/ListarServiciosDisponibles.js";
 import { ListarServiciosDelGestor } from "./application/ListarServiciosDelGestor.js";
 import { ListarMisAsignaciones } from "./application/ListarMisAsignaciones.js";
+import {
+  ListarAsignacionesDeServicio,
+  type ObtenerCamarerosContactoFn,
+} from "./application/ListarAsignacionesDeServicio.js";
 import { ServicioController } from "./presentation/servicioController.js";
 import { servicioRoutes } from "./presentation/servicioRoutes.js";
 
 export interface BookingsModuleDeps {
   prisma: PrismaClient;
   verificarCamarero: VerificarCamareroFn;
+  obtenerCamarerosContacto: ObtenerCamarerosContactoFn;
   authMiddleware: RequestHandler;
   requireGestor: RequestHandler;
   requireCamarero: RequestHandler;
@@ -34,6 +39,10 @@ export function buildBookingsModule(deps: BookingsModuleDeps): BookingsModule {
   const listarDisponibles = new ListarServiciosDisponibles(repo);
   const listarGestor = new ListarServiciosDelGestor(repo);
   const listarMisAsignaciones = new ListarMisAsignaciones(repo);
+  const listarAsignaciones = new ListarAsignacionesDeServicio(
+    repo,
+    deps.obtenerCamarerosContacto,
+  );
 
   const controller = new ServicioController(
     crear,
@@ -42,6 +51,7 @@ export function buildBookingsModule(deps: BookingsModuleDeps): BookingsModule {
     listarDisponibles,
     listarGestor,
     listarMisAsignaciones,
+    listarAsignaciones,
   );
 
   const routes = servicioRoutes(controller, {

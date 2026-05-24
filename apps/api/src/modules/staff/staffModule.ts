@@ -25,12 +25,29 @@ export interface CamareroInfo {
 }
 
 /**
+ * Datos de contacto que otros modulos pueden necesitar de un camarero
+ * (ej. bookings para mostrar al gestor quien ha aceptado un servicio).
+ * Mantenemos `bio` y `creadoEn` fuera para no filtrar mas de lo necesario.
+ */
+export interface CamareroContacto {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+}
+
+/**
  * API publica del modulo Staff (consumible por otros modulos via composicion).
  * - `obtenerCamareroInfo` se usa desde bookings para validar que un camarero
  *   esta ACTIVO antes de permitirle aceptar un servicio.
+ * - `obtenerCamarerosContactoBatch` se usa desde bookings para enriquecer la
+ *   lista de asignaciones con los datos de contacto de cada camarero.
  */
 export interface StaffPublicApi {
   obtenerCamareroInfo(id: string): Promise<CamareroInfo>;
+  obtenerCamarerosContactoBatch(
+    ids: ReadonlyArray<string>,
+  ): Promise<CamareroContacto[]>;
 }
 
 export interface StaffModuleDeps {
@@ -72,6 +89,15 @@ export function buildStaffModule(deps: StaffModuleDeps): StaffModule {
           estadoCuenta: c.estadoCuenta,
           puedeAceptarServicios: c.puedeAceptarServicios,
         };
+      },
+      async obtenerCamarerosContactoBatch(ids) {
+        const lista = await camareros.findManyByIds(ids);
+        return lista.map((c) => ({
+          id: c.id,
+          nombre: c.nombre,
+          email: c.email,
+          telefono: c.telefono,
+        }));
       },
     },
   };

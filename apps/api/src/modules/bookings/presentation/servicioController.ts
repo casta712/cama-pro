@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   CrearServicioInput as CrearServicioSchema,
   EstadoServicio as EstadoServicioSchema,
+  type AsignacionConCamareroDTO,
   type ServicioDTO,
 } from "@cama-pro/shared-types";
 import { UnauthorizedError, ForbiddenError } from "../../../shared/errors/AppError.js";
@@ -13,6 +14,7 @@ import type { CancelarServicio } from "../application/CancelarServicio.js";
 import type { ListarServiciosDisponibles } from "../application/ListarServiciosDisponibles.js";
 import type { ListarServiciosDelGestor } from "../application/ListarServiciosDelGestor.js";
 import type { ListarMisAsignaciones } from "../application/ListarMisAsignaciones.js";
+import type { ListarAsignacionesDeServicio } from "../application/ListarAsignacionesDeServicio.js";
 
 const IdParam = z.object({ id: z.string().uuid() });
 const GestorQuery = z.object({ estado: EstadoServicioSchema.optional() });
@@ -41,6 +43,7 @@ export class ServicioController {
     private readonly listarDisponibles: ListarServiciosDisponibles,
     private readonly listarGestor: ListarServiciosDelGestor,
     private readonly listarMisAsignaciones: ListarMisAsignaciones,
+    private readonly listarAsignaciones: ListarAsignacionesDeServicio,
   ) {}
 
   crearHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -118,6 +121,24 @@ export class ServicioController {
       }
       const lista = await this.listarMisAsignaciones.execute(req.usuario.camareroId);
       res.json(lista.map((s) => toDTO(s, req.usuario!.camareroId!)));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  asignacionesDeServicioHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = IdParam.parse(req.params);
+      const lista = await this.listarAsignaciones.execute(id);
+      const payload: AsignacionConCamareroDTO[] = lista.map((a) => ({
+        id: a.id,
+        camareroId: a.camareroId,
+        nombre: a.nombre,
+        email: a.email,
+        telefono: a.telefono,
+        aceptadaEn: a.aceptadaEn.toISOString(),
+      }));
+      res.json(payload);
     } catch (err) {
       next(err);
     }

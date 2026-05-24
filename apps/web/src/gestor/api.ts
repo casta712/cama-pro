@@ -1,4 +1,5 @@
 import type {
+  AsignacionConCamareroDTO,
   CamareroDTO,
   CrearServicioInput,
   EstadoCuentaCamarero,
@@ -18,6 +19,10 @@ export function crearServicio(input: CrearServicioInput): Promise<ServicioDTO> {
 
 export function cancelarServicio(id: string): Promise<ServicioDTO> {
   return apiRequest<ServicioDTO>(`/api/servicios/${id}/cancelar`, { method: "POST" });
+}
+
+export function listarAsignacionesServicio(id: string): Promise<AsignacionConCamareroDTO[]> {
+  return apiRequest<AsignacionConCamareroDTO[]>(`/api/servicios/${id}/asignaciones`);
 }
 
 export function listarCamareros(estado?: EstadoCuentaCamarero): Promise<CamareroDTO[]> {

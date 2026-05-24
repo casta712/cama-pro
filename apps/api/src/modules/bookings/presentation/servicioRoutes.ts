@@ -17,6 +17,12 @@ export function servicioRoutes(
   router.post("/", deps.authMiddleware, deps.requireGestor, controller.crearHandler);
   router.get("/", deps.authMiddleware, deps.requireGestor, controller.listarGestorHandler);
   router.post("/:id/cancelar", deps.authMiddleware, deps.requireGestor, controller.cancelarHandler);
+  router.get(
+    "/:id/asignaciones",
+    deps.authMiddleware,
+    deps.requireGestor,
+    controller.asignacionesDeServicioHandler,
+  );
 
   // Rutas del CAMARERO
   router.get("/disponibles", deps.authMiddleware, deps.requireCamarero, controller.listarDisponiblesHandler);

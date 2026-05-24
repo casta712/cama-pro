@@ -28,6 +28,14 @@ export class PrismaCamareroRepository implements CamareroRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async findManyByIds(ids: ReadonlyArray<string>): Promise<Camarero[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.prisma.camarero.findMany({
+      where: { id: { in: [...ids] } },
+    });
+    return rows.map((r) => this.toDomain(r));
+  }
+
   async existeEmail(email: string): Promise<boolean> {
     const count = await this.prisma.camarero.count({ where: { email } });
     return count > 0;

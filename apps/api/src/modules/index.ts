@@ -31,6 +31,8 @@ export function buildModules(prisma: PrismaClient): AppModules {
       staff.publicApi
         .obtenerCamareroInfo(camareroId)
         .then((c) => ({ puedeAceptarServicios: c.puedeAceptarServicios })),
+    obtenerCamarerosContacto: (ids) =>
+      staff.publicApi.obtenerCamarerosContactoBatch(ids),
     authMiddleware: identity.middleware.auth,
     requireGestor: identity.middleware.requireRol("GESTOR"),
     requireCamarero: identity.middleware.requireRol("CAMARERO"),

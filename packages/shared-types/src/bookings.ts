@@ -50,3 +50,13 @@ export const ServicioDTO = z.object({
   yaAceptado: z.boolean().optional(),
 });
 export type ServicioDTO = z.infer<typeof ServicioDTO>;
+
+export const AsignacionConCamareroDTO = z.object({
+  id: z.string().uuid(),
+  camareroId: z.string().uuid(),
+  nombre: z.string(),
+  email: z.string(),
+  telefono: z.string(),
+  aceptadaEn: z.string().datetime(),
+});
+export type AsignacionConCamareroDTO = z.infer<typeof AsignacionConCamareroDTO>;

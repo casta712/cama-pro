@@ -6,7 +6,12 @@ import { Button } from "../shared/ui/Button.js";
 import { EmptyState } from "../shared/ui/EmptyState.js";
 import { PageHeader } from "../shared/ui/PageHeader.js";
 import { ServicioCard } from "../shared/ui/ServicioCard.js";
-import { cancelarServicio, listarServiciosGestor } from "./api.js";
+import { formatearFecha, formatearHora } from "../shared/format.js";
+import {
+  cancelarServicio,
+  listarAsignacionesServicio,
+  listarServiciosGestor,
+} from "./api.js";
 
 interface FiltroOpcion {
   value: "" | EstadoServicio;
@@ -99,24 +104,107 @@ export function ServiciosGestorPage(): JSX.Element {
       {data && data.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.map((s) => (
-            <ServicioCard
+            <ServicioGestorCard
               key={s.id}
               servicio={s}
-              accion={
-                s.estado === "PUBLICADO" || s.estado === "CUBIERTO" ? (
-                  <Button
-                    variante="ghost"
-                    tamano="sm"
-                    onClick={() => onCancelar(s)}
-                    disabled={cancelar.isPending}
-                  >
-                    Cancelar servicio
-                  </Button>
-                ) : null
-              }
+              onCancelar={onCancelar}
+              cancelando={cancelar.isPending && cancelar.variables === s.id}
             />
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+interface CardProps {
+  servicio: ServicioDTO;
+  onCancelar: (s: ServicioDTO) => void;
+  cancelando: boolean;
+}
+
+function ServicioGestorCard({ servicio, onCancelar, cancelando }: CardProps): JSX.Element {
+  const [verAsignaciones, setVerAsignaciones] = useState(false);
+  const puedeCancelar = servicio.estado === "PUBLICADO" || servicio.estado === "CUBIERTO";
+  const tieneAsignaciones = servicio.cuposOcupados > 0;
+
+  const acciones = (
+    <div className="flex flex-wrap gap-2 justify-end">
+      {tieneAsignaciones && (
+        <Button
+          variante="ghost"
+          tamano="sm"
+          onClick={() => setVerAsignaciones((v) => !v)}
+        >
+          {verAsignaciones ? "Ocultar equipo" : `Ver equipo (${servicio.cuposOcupados})`}
+        </Button>
+      )}
+      {puedeCancelar && (
+        <Button
+          variante="ghost"
+          tamano="sm"
+          onClick={() => onCancelar(servicio)}
+          disabled={cancelando}
+        >
+          Cancelar servicio
+        </Button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col">
+      <ServicioCard servicio={servicio} accion={acciones} />
+      {verAsignaciones && tieneAsignaciones && (
+        <AsignacionesPanel servicioId={servicio.id} />
+      )}
+    </div>
+  );
+}
+
+function AsignacionesPanel({ servicioId }: { servicioId: string }): JSX.Element {
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["gestor", "asignaciones", servicioId],
+    queryFn: () => listarAsignacionesServicio(servicioId),
+  });
+
+  return (
+    <div className="border border-line border-t-0 rounded-card rounded-t-none bg-cream/40 p-4 sm:p-5 animate-fadeIn">
+      <p className="eyebrow mb-3">Equipo asignado</p>
+
+      {isLoading && <p className="text-sm text-ash">Cargando equipo...</p>}
+      {isError && (
+        <p className="text-sm text-wine">
+          No se pudo cargar: {(error as Error).message}
+        </p>
+      )}
+
+      {data && data.length === 0 && (
+        <p className="text-sm text-ash italic">Sin asignaciones aun.</p>
+      )}
+
+      {data && data.length > 0 && (
+        <ul className="divide-y divide-line">
+          {data.map((a) => (
+            <li key={a.id} className="py-2.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <div className="min-w-0">
+                <p className="font-medium text-ink truncate">{a.nombre}</p>
+                <p className="text-xs text-ash">
+                  <a href={`mailto:${a.email}`} className="hover:text-terra underline-offset-2 hover:underline">
+                    {a.email}
+                  </a>
+                  {" · "}
+                  <a href={`tel:${a.telefono}`} className="font-mono hover:text-terra underline-offset-2 hover:underline">
+                    {a.telefono}
+                  </a>
+                </p>
+              </div>
+              <span className="text-[11px] font-mono uppercase tracking-wider2 text-ash whitespace-nowrap">
+                acepto {formatearFecha(a.aceptadaEn)} {formatearHora(a.aceptadaEn)}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
