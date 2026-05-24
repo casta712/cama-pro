@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
-  height: 100%;
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    font-feature-settings: "ss01", "cv11";
+  }
+  ::selection {
+    background: #C2410C;
+    color: #FAF7F2;
+  }
+  /* Headline serif por defecto */
+  h1, h2, h3 {
+    font-family: theme('fontFamily.display');
+    letter-spacing: theme('letterSpacing.editorial');
+    color: theme('colors.ink');
+  }
+}
+
+@layer components {
+  .rule {
+    @apply h-px w-12 bg-ink/80;
+  }
+  .eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-wider2 text-ash;
+  }
+  .field-label {
+    @apply block text-sm font-medium text-ink mb-1.5;
+  }
 }
