@@ -8,6 +8,7 @@ export interface RegistrarCamareroInput {
   email: string;
   telefono: string;
   password: string;
+  bio: string;
 }
 
 /**
@@ -39,6 +40,7 @@ export class RegistrarCamarero {
       nombre: input.nombre,
       email: emailNorm,
       telefono: input.telefono,
+      bio: input.bio,
     });
 
     await this.camareros.save(camarero);

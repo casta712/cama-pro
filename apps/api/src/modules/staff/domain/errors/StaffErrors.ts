@@ -16,6 +16,16 @@ export class TelefonoInvalidoError extends DomainError {
   }
 }
 
+export class BioInvalidaError extends DomainError {
+  readonly code = "BIO_INVALIDA";
+  override readonly httpStatus = 400;
+  constructor() {
+    super(
+      "La presentacion debe tener entre 30 y 1000 caracteres para que el gestor pueda revisarla",
+    );
+  }
+}
+
 export class EmailCamareroYaRegistradoError extends DomainError {
   readonly code = "EMAIL_CAMARERO_YA_REGISTRADO";
   constructor(email: string) {

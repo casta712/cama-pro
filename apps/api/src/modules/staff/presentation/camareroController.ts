@@ -19,6 +19,7 @@ function toDTO(c: Camarero): CamareroDTO {
     nombre: c.nombre,
     email: c.email,
     telefono: c.telefono,
+    bio: c.bio,
     estadoCuenta: c.estadoCuenta,
     creadoEn: c.creadoEn.toISOString(),
   };

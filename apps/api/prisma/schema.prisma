@@ -46,6 +46,10 @@ model Camarero {
   nombre       String
   email        String   @unique
   telefono     String
+  // Presentacion libre que el camarero envia al registrarse; el gestor la
+  // usa para decidir si aprueba la cuenta. Default vacio solo permite la
+  // migracion sobre BD existentes — el dominio exige >=30 chars al crear.
+  bio          String   @default("") @db.Text
   estadoCuenta EstadoCuentaCamarero @default(PENDIENTE_APROBACION)
   creadoEn     DateTime @default(now())
 

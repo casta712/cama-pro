@@ -10,6 +10,7 @@ type CamareroRow = {
   nombre: string;
   email: string;
   telefono: string;
+  bio: string;
   estadoCuenta: EstadoCuentaCamarero;
   creadoEn: Date;
 };
@@ -40,12 +41,14 @@ export class PrismaCamareroRepository implements CamareroRepository {
         nombre: camarero.nombre,
         email: camarero.email,
         telefono: camarero.telefono,
+        bio: camarero.bio,
         estadoCuenta: camarero.estadoCuenta,
         creadoEn: camarero.creadoEn,
       },
       update: {
         nombre: camarero.nombre,
         telefono: camarero.telefono,
+        bio: camarero.bio,
         estadoCuenta: camarero.estadoCuenta,
       },
     });
@@ -71,6 +74,7 @@ export class PrismaCamareroRepository implements CamareroRepository {
       nombre: row.nombre,
       email: row.email,
       telefono: row.telefono,
+      bio: row.bio,
       estadoCuenta: row.estadoCuenta,
       creadoEn: row.creadoEn,
     });

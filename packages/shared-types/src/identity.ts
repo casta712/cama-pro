@@ -15,6 +15,7 @@ export const RegistrarCamareroInput = z.object({
   email: z.string().email(),
   telefono: z.string().min(6).max(20),
   password: z.string().min(8).max(72),
+  bio: z.string().trim().min(30).max(1000),
 });
 export type RegistrarCamareroInput = z.infer<typeof RegistrarCamareroInput>;
 

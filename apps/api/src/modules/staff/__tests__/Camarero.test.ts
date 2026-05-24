@@ -1,15 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { Camarero } from "../domain/Camarero.js";
+import { BIO_MIN_LONGITUD, Camarero } from "../domain/Camarero.js";
 import {
+  BioInvalidaError,
   NombreInvalidoError,
   TelefonoInvalidoError,
 } from "../domain/errors/StaffErrors.js";
+
+const BIO_VALIDA =
+  "Cinco anos como camarero en bodas y cocteles, equipo polivalente y servicio impecable.";
 
 const baseInput = {
   id: "c1",
   nombre: "Juan Perez",
   email: "juan@cama.es",
   telefono: "600123456",
+  bio: BIO_VALIDA,
 };
 
 describe("Camarero (agregado)", () => {
@@ -70,5 +75,29 @@ describe("Camarero (agregado)", () => {
     c.suspender();
     c.aprobar();
     expect(c.estadoCuenta).toBe("ACTIVO");
+  });
+
+  it("rechaza bio demasiado corta", () => {
+    expect(() => Camarero.crear({ ...baseInput, bio: "hola" })).toThrow(
+      BioInvalidaError,
+    );
+  });
+
+  it("rechaza bio vacia o solo espacios", () => {
+    expect(() => Camarero.crear({ ...baseInput, bio: "   " })).toThrow(
+      BioInvalidaError,
+    );
+  });
+
+  it("rechaza bio demasiado larga", () => {
+    expect(() =>
+      Camarero.crear({ ...baseInput, bio: "x".repeat(1001) }),
+    ).toThrow(BioInvalidaError);
+  });
+
+  it("recorta espacios de la bio y la expone", () => {
+    const c = Camarero.crear({ ...baseInput, bio: `   ${BIO_VALIDA}   ` });
+    expect(c.bio).toBe(BIO_VALIDA);
+    expect(c.bio.length).toBeGreaterThanOrEqual(BIO_MIN_LONGITUD);
   });
 });

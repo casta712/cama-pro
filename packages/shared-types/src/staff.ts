@@ -8,6 +8,7 @@ export const CamareroDTO = z.object({
   nombre: z.string(),
   email: z.string().email(),
   telefono: z.string(),
+  bio: z.string(),
   estadoCuenta: EstadoCuentaCamarero,
   creadoEn: z.string().datetime(),
 });

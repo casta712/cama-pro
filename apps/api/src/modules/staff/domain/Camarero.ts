@@ -1,4 +1,5 @@
 import {
+  BioInvalidaError,
   NombreInvalidoError,
   TelefonoInvalidoError,
 } from "./errors/StaffErrors.js";
@@ -8,11 +9,15 @@ export type EstadoCuentaCamarero =
   | "ACTIVO"
   | "SUSPENDIDO";
 
+export const BIO_MIN_LONGITUD = 30;
+export const BIO_MAX_LONGITUD = 1000;
+
 interface CamareroProps {
   id: string;
   nombre: string;
   email: string;
   telefono: string;
+  bio: string;
   estadoCuenta: EstadoCuentaCamarero;
   creadoEn: Date;
 }
@@ -36,6 +41,7 @@ export class Camarero {
     nombre: string;
     email: string;
     telefono: string;
+    bio: string;
   }): Camarero {
     const nombre = input.nombre.trim();
     if (nombre.length < 2 || nombre.length > 80) {
@@ -45,12 +51,17 @@ export class Camarero {
     if (telefono.length < 6 || telefono.length > 20) {
       throw new TelefonoInvalidoError();
     }
+    const bio = input.bio.trim();
+    if (bio.length < BIO_MIN_LONGITUD || bio.length > BIO_MAX_LONGITUD) {
+      throw new BioInvalidaError();
+    }
 
     return new Camarero({
       id: input.id,
       nombre,
       email: input.email.trim().toLowerCase(),
       telefono,
+      bio,
       estadoCuenta: "PENDIENTE_APROBACION",
       creadoEn: new Date(),
     });
@@ -83,6 +94,9 @@ export class Camarero {
   }
   get telefono(): string {
     return this.props.telefono;
+  }
+  get bio(): string {
+    return this.props.bio;
   }
   get estadoCuenta(): EstadoCuentaCamarero {
     return this.props.estadoCuenta;
