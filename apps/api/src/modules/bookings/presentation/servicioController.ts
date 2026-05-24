@@ -28,7 +28,7 @@ function toDTO(s: Servicio, camareroId?: string): ServicioDTO {
     cuposOcupados: s.cuposOcupados,
     uniforme: s.uniforme,
     notas: s.notas,
-    estado: s.estado,
+    estado: s.estadoActual(),
     ...(camareroId ? { yaAceptado: s.haAceptado(camareroId) } : {}),
   };
 }

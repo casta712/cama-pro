@@ -9,6 +9,22 @@ export class FechaInvalidaError extends DomainError {
   }
 }
 
+export class ServicioMuyProximoError extends DomainError {
+  readonly code = "SERVICIO_MUY_PROXIMO";
+  override readonly httpStatus = 422;
+  constructor(horasMinimas: number) {
+    super(`El servicio debe publicarse con al menos ${horasMinimas} horas de antelacion`);
+  }
+}
+
+export class ServicioYaEnCursoError extends DomainError {
+  readonly code = "SERVICIO_YA_EN_CURSO";
+  override readonly httpStatus = 409;
+  constructor() {
+    super("El servicio ya ha comenzado y no admite cambios");
+  }
+}
+
 export class DuracionInvalidaError extends DomainError {
   readonly code = "DURACION_INVALIDA";
   override readonly httpStatus = 400;

@@ -3,7 +3,9 @@ import {
   CuposInvalidosError,
   DuracionInvalidaError,
   FechaInvalidaError,
+  ServicioMuyProximoError,
   ServicioNoDisponibleError,
+  ServicioYaEnCursoError,
   TransicionEstadoInvalidaError,
   YaAsignadoError,
 } from "./errors/BookingsErrors.js";
@@ -51,6 +53,8 @@ interface ServicioProps {
 
 const MAX_CUPOS = 200;
 const MAX_HORAS = 24;
+export const ANTELACION_MINIMA_HORAS = 3;
+const ANTELACION_MINIMA_MS = ANTELACION_MINIMA_HORAS * 60 * 60 * 1000;
 
 /**
  * Agregado Servicio (raiz). Encapsula la maquina de estados y las
@@ -85,6 +89,9 @@ export class Servicio {
 
     if (input.fechaInicio.getTime() <= ahora.getTime()) {
       throw new FechaInvalidaError();
+    }
+    if (input.fechaInicio.getTime() < ahora.getTime() + ANTELACION_MINIMA_MS) {
+      throw new ServicioMuyProximoError(ANTELACION_MINIMA_HORAS);
     }
     if (
       !Number.isInteger(input.duracionHoras) ||
@@ -129,8 +136,12 @@ export class Servicio {
     asignacionId: string;
     ahora?: Date;
   }): Asignacion {
+    const ahora = input.ahora ?? new Date();
     if (this.props.estado !== "PUBLICADO") {
       throw new ServicioNoDisponibleError(this.props.estado);
+    }
+    if (ahora.getTime() >= this.props.fechaInicio.getTime()) {
+      throw new ServicioYaEnCursoError();
     }
     if (this.props.asignaciones.some((a) => a.camareroId === input.camareroId)) {
       throw new YaAsignadoError();
@@ -142,7 +153,7 @@ export class Servicio {
     const asignacion: Asignacion = {
       id: input.asignacionId,
       camareroId: input.camareroId,
-      aceptadaEn: input.ahora ?? new Date(),
+      aceptadaEn: ahora,
     };
     this.props.asignaciones.push(asignacion);
 
@@ -153,14 +164,34 @@ export class Servicio {
     return asignacion;
   }
 
-  cancelar(): void {
-    if (
-      this.props.estado !== "PUBLICADO" &&
-      this.props.estado !== "CUBIERTO"
-    ) {
-      throw new TransicionEstadoInvalidaError(this.props.estado, "CANCELADO");
+  cancelar(ahora: Date = new Date()): void {
+    const efectivo = this.estadoActual(ahora);
+    if (efectivo !== "PUBLICADO" && efectivo !== "CUBIERTO") {
+      throw new TransicionEstadoInvalidaError(efectivo, "CANCELADO");
     }
     this.props.estado = "CANCELADO";
+  }
+
+  /**
+   * Estado efectivo del servicio en un instante dado.
+   *
+   * CANCELADO y FINALIZADO persistidos siempre ganan. Para los demas, el
+   * tiempo decide: si ya termino -> FINALIZADO, si ya empezo -> EN_CURSO,
+   * si no -> el estado persistido (PUBLICADO o CUBIERTO).
+   *
+   * Se computa al vuelo para evitar acoplar la coherencia del agregado a
+   * un cron. La persistencia solo refleja decisiones humanas (publicar,
+   * aceptar, cancelar). Ver docs/dominio.md.
+   */
+  estadoActual(ahora: Date = new Date()): EstadoServicio {
+    if (this.props.estado === "CANCELADO") return "CANCELADO";
+    if (this.props.estado === "FINALIZADO") return "FINALIZADO";
+    const inicio = this.props.fechaInicio.getTime();
+    const fin = inicio + this.props.duracionHoras * 60 * 60 * 1000;
+    const t = ahora.getTime();
+    if (t >= fin) return "FINALIZADO";
+    if (t >= inicio) return "EN_CURSO";
+    return this.props.estado;
   }
 
   haAceptado(camareroId: string): boolean {
