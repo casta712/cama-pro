@@ -25,6 +25,34 @@ export class ServicioYaEnCursoError extends DomainError {
   }
 }
 
+export class ServicioNoEditableError extends DomainError {
+  readonly code = "SERVICIO_NO_EDITABLE";
+  override readonly httpStatus = 409;
+  constructor(estado: EstadoServicio) {
+    super(`No se puede editar un servicio en estado ${estado}`);
+  }
+}
+
+export class EdicionDuraConAsignacionesError extends DomainError {
+  readonly code = "EDICION_DURA_CON_ASIGNACIONES";
+  override readonly httpStatus = 409;
+  constructor(campo: string) {
+    super(
+      `Hay camareros asignados: no se puede cambiar ${campo}. Cancela el servicio y vuelve a publicarlo si necesitas este cambio.`,
+    );
+  }
+}
+
+export class CuposPorDebajoDeAsignacionesError extends DomainError {
+  readonly code = "CUPOS_POR_DEBAJO_DE_ASIGNACIONES";
+  override readonly httpStatus = 409;
+  constructor(cuposNuevos: number, asignados: number) {
+    super(
+      `No se pueden reducir los cupos a ${cuposNuevos}: ya hay ${asignados} camareros asignados`,
+    );
+  }
+}
+
 export class DuracionInvalidaError extends DomainError {
   readonly code = "DURACION_INVALIDA";
   override readonly httpStatus = 400;

@@ -2,6 +2,7 @@ import type {
   AsignacionConCamareroDTO,
   CamareroDTO,
   CrearServicioInput,
+  EditarServicioInput,
   EstadoCuentaCamarero,
   EstadoServicio,
   ServicioDTO,
@@ -15,6 +16,16 @@ export function listarServiciosGestor(estado?: EstadoServicio): Promise<Servicio
 
 export function crearServicio(input: CrearServicioInput): Promise<ServicioDTO> {
   return apiRequest<ServicioDTO>("/api/servicios", { method: "POST", body: input });
+}
+
+export function editarServicio(
+  id: string,
+  cambios: EditarServicioInput,
+): Promise<ServicioDTO> {
+  return apiRequest<ServicioDTO>(`/api/servicios/${id}`, {
+    method: "PATCH",
+    body: cambios,
+  });
 }
 
 export function cancelarServicio(id: string): Promise<ServicioDTO> {

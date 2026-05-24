@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import {
   CrearServicioInput as CrearServicioSchema,
+  EditarServicioInput as EditarServicioSchema,
   EstadoServicio as EstadoServicioSchema,
   type AsignacionConCamareroDTO,
   type ServicioDTO,
@@ -9,6 +10,7 @@ import {
 import { UnauthorizedError, ForbiddenError } from "../../../shared/errors/AppError.js";
 import type { Servicio } from "../domain/Servicio.js";
 import type { CrearServicio } from "../application/CrearServicio.js";
+import type { EditarServicio } from "../application/EditarServicio.js";
 import type { AceptarServicio } from "../application/AceptarServicio.js";
 import type { CancelarServicio } from "../application/CancelarServicio.js";
 import type { ListarServiciosDisponibles } from "../application/ListarServiciosDisponibles.js";
@@ -38,6 +40,7 @@ function toDTO(s: Servicio, camareroId?: string): ServicioDTO {
 export class ServicioController {
   constructor(
     private readonly crear: CrearServicio,
+    private readonly editar: EditarServicio,
     private readonly aceptar: AceptarServicio,
     private readonly cancelar: CancelarServicio,
     private readonly listarDisponibles: ListarServiciosDisponibles,
@@ -54,6 +57,21 @@ export class ServicioController {
         fechaInicio: new Date(raw.fechaInicio),
       });
       res.status(201).json(toDTO(servicio));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  editarHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = IdParam.parse(req.params);
+      const raw = EditarServicioSchema.parse(req.body);
+      const servicio = await this.editar.execute({
+        id,
+        ...raw,
+        fechaInicio: raw.fechaInicio !== undefined ? new Date(raw.fechaInicio) : undefined,
+      });
+      res.json(toDTO(servicio));
     } catch (err) {
       next(err);
     }

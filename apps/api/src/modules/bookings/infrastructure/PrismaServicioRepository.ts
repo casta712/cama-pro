@@ -72,9 +72,19 @@ export class PrismaServicioRepository implements ServicioRepository {
       } else {
         // BLOQUEO OPTIMISTA: solo actualiza si la version en BD sigue
         // siendo la misma que cuando se cargo el agregado en memoria.
+        // Persistimos todos los campos mutables (no solo estado) para que
+        // los casos de uso de edicion vean los cambios reflejados en BD.
         const updated = await tx.servicio.updateMany({
           where: { id: servicio.id, version: servicio.version },
           data: {
+            fechaInicio: servicio.fechaInicio,
+            duracionHoras: servicio.duracionHoras,
+            lugarNombre: servicio.lugar.nombre,
+            lugarDireccion: servicio.lugar.direccion,
+            tipoEvento: servicio.tipoEvento,
+            cuposTotales: servicio.cuposTotales,
+            uniforme: servicio.uniforme,
+            notas: servicio.notas,
             estado: servicio.estado,
             version: { increment: 1 },
           },

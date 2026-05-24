@@ -80,7 +80,7 @@ async function extraerError(res: Response): Promise<ApiError> {
 }
 
 export interface RequestOpts {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   signal?: AbortSignal;
 }

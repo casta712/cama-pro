@@ -2,6 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 import type { Router, RequestHandler } from "express";
 import { PrismaServicioRepository } from "./infrastructure/PrismaServicioRepository.js";
 import { CrearServicio } from "./application/CrearServicio.js";
+import { EditarServicio } from "./application/EditarServicio.js";
 import {
   AceptarServicio,
   type VerificarCamareroFn,
@@ -34,6 +35,7 @@ export function buildBookingsModule(deps: BookingsModuleDeps): BookingsModule {
   const repo = new PrismaServicioRepository(deps.prisma);
 
   const crear = new CrearServicio(repo);
+  const editar = new EditarServicio(repo);
   const aceptar = new AceptarServicio(repo, deps.verificarCamarero);
   const cancelar = new CancelarServicio(repo);
   const listarDisponibles = new ListarServiciosDisponibles(repo);
@@ -46,6 +48,7 @@ export function buildBookingsModule(deps: BookingsModuleDeps): BookingsModule {
 
   const controller = new ServicioController(
     crear,
+    editar,
     aceptar,
     cancelar,
     listarDisponibles,

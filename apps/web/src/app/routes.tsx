@@ -4,6 +4,7 @@ import { LoginPage } from "../auth/LoginPage.js";
 import { RegistroCamareroPage } from "../auth/RegistroCamareroPage.js";
 import { ServiciosGestorPage } from "../gestor/ServiciosGestorPage.js";
 import { CrearServicioPage } from "../gestor/CrearServicioPage.js";
+import { EditarServicioPage } from "../gestor/EditarServicioPage.js";
 import { CamarerosGestorPage } from "../gestor/CamarerosGestorPage.js";
 import { ServiciosDisponiblesPage } from "../camarero/ServiciosDisponiblesPage.js";
 import { MisAsignacionesPage } from "../camarero/MisAsignacionesPage.js";
@@ -58,6 +59,14 @@ export function AppRoutes(): JSX.Element {
           element={
             <ProtectedRoute rol="GESTOR">
               <CrearServicioPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/gestor/servicios/:id/editar"
+          element={
+            <ProtectedRoute rol="GESTOR">
+              <EditarServicioPage />
             </ProtectedRoute>
           }
         />

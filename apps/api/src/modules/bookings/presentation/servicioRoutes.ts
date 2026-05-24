@@ -16,6 +16,7 @@ export function servicioRoutes(
   // Rutas del GESTOR
   router.post("/", deps.authMiddleware, deps.requireGestor, controller.crearHandler);
   router.get("/", deps.authMiddleware, deps.requireGestor, controller.listarGestorHandler);
+  router.patch("/:id", deps.authMiddleware, deps.requireGestor, controller.editarHandler);
   router.post("/:id/cancelar", deps.authMiddleware, deps.requireGestor, controller.cancelarHandler);
   router.get(
     "/:id/asignaciones",

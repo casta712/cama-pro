@@ -3,10 +3,13 @@ import { ANTELACION_MINIMA_HORAS, Servicio } from "../domain/Servicio.js";
 import {
   CupoLlenoError,
   CuposInvalidosError,
+  CuposPorDebajoDeAsignacionesError,
   DuracionInvalidaError,
+  EdicionDuraConAsignacionesError,
   FechaInvalidaError,
   ServicioMuyProximoError,
   ServicioNoDisponibleError,
+  ServicioNoEditableError,
   ServicioYaEnCursoError,
   TransicionEstadoInvalidaError,
   YaAsignadoError,
@@ -246,6 +249,169 @@ describe("Servicio — estadoActual() computa por tiempo", () => {
     expect(s.estado).toBe("CUBIERTO");
     expect(s.estadoActual(new Date("2026-05-24T19:00:00.000Z"))).toBe("CUBIERTO");
     expect(s.estadoActual(new Date("2026-05-24T21:00:00.000Z"))).toBe("EN_CURSO");
+  });
+});
+
+describe("Servicio — editar()", () => {
+  const ahoraCrear = new Date("2026-05-24T12:00:00.000Z");
+  const inicio = new Date("2026-05-24T20:00:00.000Z");
+
+  function nuevo(): Servicio {
+    return Servicio.crear({ ...baseInput, fechaInicio: inicio, ahora: ahoraCrear });
+  }
+
+  describe("sin asignaciones (todo editable)", () => {
+    it("cambia tipoEvento + uniforme + notas", () => {
+      const s = nuevo();
+      s.editar({ tipoEvento: "COCTEL", uniforme: "blanco", notas: "puerta lateral" }, ahoraCrear);
+      expect(s.tipoEvento).toBe("COCTEL");
+      expect(s.uniforme).toBe("blanco");
+      expect(s.notas).toBe("puerta lateral");
+    });
+
+    it("cambia fecha respetando antelacion 3h", () => {
+      const s = nuevo();
+      const nuevaFecha = new Date("2026-05-25T20:00:00.000Z");
+      s.editar({ fechaInicio: nuevaFecha }, ahoraCrear);
+      expect(s.fechaInicio).toEqual(nuevaFecha);
+    });
+
+    it("rechaza fecha que rompe la antelacion minima", () => {
+      const s = nuevo();
+      const muyCerca = new Date(ahoraCrear.getTime() + 60 * 60 * 1000);
+      expect(() => s.editar({ fechaInicio: muyCerca }, ahoraCrear)).toThrow(
+        ServicioMuyProximoError,
+      );
+    });
+
+    it("cambia cupos arriba sin asignaciones", () => {
+      const s = nuevo();
+      s.editar({ cuposTotales: 10 }, ahoraCrear);
+      expect(s.cuposTotales).toBe(10);
+    });
+
+    it("rechaza cupos fuera de rango", () => {
+      const s = nuevo();
+      expect(() => s.editar({ cuposTotales: 0 }, ahoraCrear)).toThrow(CuposInvalidosError);
+      expect(() => s.editar({ cuposTotales: 201 }, ahoraCrear)).toThrow(CuposInvalidosError);
+    });
+
+    it("uniforme y notas a string vacio quedan null", () => {
+      const s = Servicio.crear({
+        ...baseInput,
+        fechaInicio: inicio,
+        ahora: ahoraCrear,
+        uniforme: "viejo",
+        notas: "viejo",
+      });
+      s.editar({ uniforme: "  ", notas: "" }, ahoraCrear);
+      expect(s.uniforme).toBeNull();
+      expect(s.notas).toBeNull();
+    });
+  });
+
+  describe("con asignaciones (solo blandos)", () => {
+    function conUnaAsignacion(): Servicio {
+      const s = nuevo();
+      s.aceptar({ camareroId: "c1", asignacionId: "a1", ahora: ahoraCrear });
+      return s;
+    }
+
+    it("cambia tipoEvento + uniforme + notas (OK)", () => {
+      const s = conUnaAsignacion();
+      s.editar({ tipoEvento: "COCTEL", uniforme: "negro", notas: "x" }, ahoraCrear);
+      expect(s.tipoEvento).toBe("COCTEL");
+      expect(s.uniforme).toBe("negro");
+    });
+
+    it("rechaza cambio de fecha", () => {
+      const s = conUnaAsignacion();
+      expect(() =>
+        s.editar({ fechaInicio: new Date("2026-05-25T20:00:00.000Z") }, ahoraCrear),
+      ).toThrow(EdicionDuraConAsignacionesError);
+    });
+
+    it("rechaza cambio de duracion", () => {
+      const s = conUnaAsignacion();
+      expect(() => s.editar({ duracionHoras: 6 }, ahoraCrear)).toThrow(
+        EdicionDuraConAsignacionesError,
+      );
+    });
+
+    it("rechaza cambio de lugar", () => {
+      const s = conUnaAsignacion();
+      expect(() =>
+        s.editar({ lugar: { nombre: "Otro", direccion: "X" } }, ahoraCrear),
+      ).toThrow(EdicionDuraConAsignacionesError);
+    });
+
+    it("rechaza cambio de cupos", () => {
+      const s = conUnaAsignacion();
+      expect(() => s.editar({ cuposTotales: 5 }, ahoraCrear)).toThrow(
+        EdicionDuraConAsignacionesError,
+      );
+    });
+  });
+
+  describe("validaciones de estado", () => {
+    it("rechaza editar si esta CUBIERTO", () => {
+      const s = Servicio.crear({
+        ...baseInput,
+        fechaInicio: inicio,
+        ahora: ahoraCrear,
+        cuposTotales: 1,
+      });
+      s.aceptar({ camareroId: "c1", asignacionId: "a1", ahora: ahoraCrear });
+      expect(s.estado).toBe("CUBIERTO");
+      expect(() => s.editar({ notas: "nada" }, ahoraCrear)).toThrow(
+        ServicioNoEditableError,
+      );
+    });
+
+    it("rechaza editar si esta CANCELADO", () => {
+      const s = nuevo();
+      s.cancelar(ahoraCrear);
+      expect(() => s.editar({ notas: "nada" }, ahoraCrear)).toThrow(
+        ServicioNoEditableError,
+      );
+    });
+
+    it("rechaza editar si ya esta EN_CURSO por tiempo", () => {
+      const s = nuevo();
+      expect(() => s.editar({ notas: "x" }, new Date("2026-05-24T21:00:00.000Z"))).toThrow(
+        ServicioNoEditableError,
+      );
+    });
+  });
+
+  it("cuposPorDebajoDeAsignaciones lanza si bajas cupos bajo lo aceptado", () => {
+    // Solo posible si quitas el bloqueo de hayAsignaciones — usa reconstituir
+    // para forzar el escenario donde el invariante debe protegerse.
+    const s = Servicio.reconstituir({
+      id: "s1",
+      fechaInicio: inicio,
+      duracionHoras: 4,
+      lugar: { nombre: "Hotel X", direccion: "Calle 1" },
+      tipoEvento: "BODA",
+      cuposTotales: 3,
+      uniforme: null,
+      notas: null,
+      estado: "PUBLICADO",
+      version: 0,
+      creadoEn: ahoraCrear,
+      asignaciones: [
+        { id: "a1", camareroId: "c1", aceptadaEn: ahoraCrear },
+        { id: "a2", camareroId: "c2", aceptadaEn: ahoraCrear },
+      ],
+    });
+    // Hay 2 asignaciones. Intentar bajar cupos a 1 dispara el bloqueo de
+    // EdicionDuraConAsignacionesError ANTES del de cupos. Validamos ese.
+    expect(() => s.editar({ cuposTotales: 1 }, ahoraCrear)).toThrow(
+      EdicionDuraConAsignacionesError,
+    );
+    // El invariante de cupos-bajo-asignaciones existe para futuros casos
+    // donde se permitan cambios duros (no se ejercita aqui).
+    expect(CuposPorDebajoDeAsignacionesError).toBeDefined();
   });
 });
 

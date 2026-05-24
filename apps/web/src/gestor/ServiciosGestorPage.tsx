@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EstadoServicio, ServicioDTO } from "@cama-pro/shared-types";
 import { Button } from "../shared/ui/Button.js";
@@ -125,7 +125,9 @@ interface CardProps {
 
 function ServicioGestorCard({ servicio, onCancelar, cancelando }: CardProps): JSX.Element {
   const [verAsignaciones, setVerAsignaciones] = useState(false);
+  const navigate = useNavigate();
   const puedeCancelar = servicio.estado === "PUBLICADO" || servicio.estado === "CUBIERTO";
+  const puedeEditar = servicio.estado === "PUBLICADO";
   const tieneAsignaciones = servicio.cuposOcupados > 0;
 
   const acciones = (
@@ -137,6 +139,15 @@ function ServicioGestorCard({ servicio, onCancelar, cancelando }: CardProps): JS
           onClick={() => setVerAsignaciones((v) => !v)}
         >
           {verAsignaciones ? "Ocultar equipo" : `Ver equipo (${servicio.cuposOcupados})`}
+        </Button>
+      )}
+      {puedeEditar && (
+        <Button
+          variante="ghost"
+          tamano="sm"
+          onClick={() => navigate(`/gestor/servicios/${servicio.id}/editar`)}
+        >
+          Editar
         </Button>
       )}
       {puedeCancelar && (

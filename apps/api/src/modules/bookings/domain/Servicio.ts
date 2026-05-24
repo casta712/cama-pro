@@ -1,10 +1,13 @@
 import {
   CupoLlenoError,
   CuposInvalidosError,
+  CuposPorDebajoDeAsignacionesError,
   DuracionInvalidaError,
+  EdicionDuraConAsignacionesError,
   FechaInvalidaError,
   ServicioMuyProximoError,
   ServicioNoDisponibleError,
+  ServicioNoEditableError,
   ServicioYaEnCursoError,
   TransicionEstadoInvalidaError,
   YaAsignadoError,
@@ -162,6 +165,112 @@ export class Servicio {
     }
 
     return asignacion;
+  }
+
+  /**
+   * Edita los campos mutables del servicio.
+   *
+   * Reglas:
+   *  - Solo se puede editar si `estadoActual === "PUBLICADO"` (no CUBIERTO,
+   *    EN_CURSO, FINALIZADO ni CANCELADO).
+   *  - Campos blandos (tipoEvento, uniforme, notas): siempre editables.
+   *  - Campos duros (fechaInicio, duracionHoras, lugar, cuposTotales): solo
+   *    editables si NO hay asignaciones aceptadas, para no romper el
+   *    contrato implicito con los camareros que ya aceptaron.
+   *  - Cualquier nueva fechaInicio se valida contra la antelacion minima.
+   *
+   * Si necesitas cambiar algo duro con asignaciones, cancela el servicio
+   * y publica uno nuevo. La compensacion la decide el operador, no el agregado.
+   */
+  editar(
+    cambios: {
+      fechaInicio?: Date;
+      duracionHoras?: number;
+      lugar?: Lugar;
+      tipoEvento?: TipoEvento;
+      cuposTotales?: number;
+      uniforme?: string | null;
+      notas?: string | null;
+    },
+    ahora: Date = new Date(),
+  ): void {
+    const efectivo = this.estadoActual(ahora);
+    if (efectivo !== "PUBLICADO") {
+      throw new ServicioNoEditableError(efectivo);
+    }
+
+    const hayAsignaciones = this.props.asignaciones.length > 0;
+    const tieneCambioDuro =
+      cambios.fechaInicio !== undefined ||
+      cambios.duracionHoras !== undefined ||
+      cambios.lugar !== undefined ||
+      cambios.cuposTotales !== undefined;
+
+    if (hayAsignaciones && tieneCambioDuro) {
+      const campo =
+        cambios.fechaInicio !== undefined
+          ? "la fecha"
+          : cambios.duracionHoras !== undefined
+            ? "la duracion"
+            : cambios.lugar !== undefined
+              ? "el lugar"
+              : "los cupos";
+      throw new EdicionDuraConAsignacionesError(campo);
+    }
+
+    if (cambios.fechaInicio !== undefined) {
+      if (cambios.fechaInicio.getTime() <= ahora.getTime()) {
+        throw new FechaInvalidaError();
+      }
+      if (cambios.fechaInicio.getTime() < ahora.getTime() + ANTELACION_MINIMA_MS) {
+        throw new ServicioMuyProximoError(ANTELACION_MINIMA_HORAS);
+      }
+      this.props.fechaInicio = cambios.fechaInicio;
+    }
+
+    if (cambios.duracionHoras !== undefined) {
+      if (
+        !Number.isInteger(cambios.duracionHoras) ||
+        cambios.duracionHoras < 1 ||
+        cambios.duracionHoras > MAX_HORAS
+      ) {
+        throw new DuracionInvalidaError();
+      }
+      this.props.duracionHoras = cambios.duracionHoras;
+    }
+
+    if (cambios.lugar !== undefined) {
+      this.props.lugar = cambios.lugar;
+    }
+
+    if (cambios.cuposTotales !== undefined) {
+      if (
+        !Number.isInteger(cambios.cuposTotales) ||
+        cambios.cuposTotales < 1 ||
+        cambios.cuposTotales > MAX_CUPOS
+      ) {
+        throw new CuposInvalidosError();
+      }
+      if (cambios.cuposTotales < this.props.asignaciones.length) {
+        throw new CuposPorDebajoDeAsignacionesError(
+          cambios.cuposTotales,
+          this.props.asignaciones.length,
+        );
+      }
+      this.props.cuposTotales = cambios.cuposTotales;
+    }
+
+    if (cambios.tipoEvento !== undefined) {
+      this.props.tipoEvento = cambios.tipoEvento;
+    }
+
+    if (cambios.uniforme !== undefined) {
+      this.props.uniforme = cambios.uniforme?.trim() || null;
+    }
+
+    if (cambios.notas !== undefined) {
+      this.props.notas = cambios.notas?.trim() || null;
+    }
   }
 
   cancelar(ahora: Date = new Date()): void {

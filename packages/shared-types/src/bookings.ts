@@ -36,6 +36,21 @@ export const CrearServicioInput = z.object({
 });
 export type CrearServicioInput = z.infer<typeof CrearServicioInput>;
 
+export const EditarServicioInput = z
+  .object({
+    fechaInicio: z.string().datetime().optional(),
+    duracionHoras: z.number().int().min(1).max(24).optional(),
+    lugar: Lugar.optional(),
+    tipoEvento: TipoEvento.optional(),
+    cuposTotales: z.number().int().min(1).max(200).optional(),
+    uniforme: z.string().max(200).nullable().optional(),
+    notas: z.string().max(1000).nullable().optional(),
+  })
+  .refine((v) => Object.values(v).some((x) => x !== undefined), {
+    message: "Debes incluir al menos un campo a modificar",
+  });
+export type EditarServicioInput = z.infer<typeof EditarServicioInput>;
+
 export const ServicioDTO = z.object({
   id: z.string().uuid(),
   fechaInicio: z.string().datetime(),
