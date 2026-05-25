@@ -9,6 +9,8 @@
     "start": "node dist/main.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:all": "npm run test && npm run test:integration",
     "lint": "tsc -p tsconfig.json --noEmit",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
