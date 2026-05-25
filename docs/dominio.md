@@ -133,6 +133,7 @@ class Servicio {
 - Camareros se **autoregistran** pero el gestor los **aprueba** antes de habilitarlos.
 - **Sin cancelacion post-aceptacion** desde la app (camarero llama al gestor; el gestor podra cancelar el Servicio entero).
 - **Todos los camareros aprobados ven todos los servicios** (sin filtros de zona/categoria).
+- **Un camarero no puede aceptar dos servicios cuyos intervalos `[fechaInicio, fechaInicio + duracionHoras)` se solapan estrictamente.** Servicios contiguos (uno termina cuando el otro empieza) si se permiten. Solo cuentan como bloqueantes los servicios del camarero en estados `PUBLICADO`, `CUBIERTO` o `EN_CURSO`; los `CANCELADO` y `FINALIZADO` no ocupan. Esta invariante cruza multiples instancias del agregado y por tanto se valida en el caso de uso `AceptarServicio`, no en el agregado. Lanza `CamareroConServicioSolapadoError` (409).
 - Cliente externo (restaurante/casa de eventos) **NO entra al sistema** en MVP.
 
 ---

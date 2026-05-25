@@ -3,12 +3,11 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ServicioDTO } from "@cama-pro/shared-types";
 import { useAuth } from "../auth/AuthContext.js";
-import { aceptarServicio } from "../camarero/api.js";
+import { aceptarServicio, mensajeErrorAceptar } from "../camarero/api.js";
 import {
   cancelarServicio,
   listarAsignacionesServicio,
 } from "../gestor/api.js";
-import { ApiError } from "./fetchClient.js";
 import { Badge } from "./ui/Badge.js";
 import { Button } from "./ui/Button.js";
 import { Card } from "./ui/Card.js";
@@ -128,13 +127,7 @@ function Detalle({
       onCambio();
     },
     onError: (err: unknown) => {
-      const texto =
-        err instanceof ApiError && err.status === 409
-          ? "Otro camarero llego antes."
-          : err instanceof Error
-            ? err.message
-            : "No se pudo aceptar el servicio";
-      setAviso({ tipo: "err", texto });
+      setAviso({ tipo: "err", texto: mensajeErrorAceptar(err) });
     },
   });
 

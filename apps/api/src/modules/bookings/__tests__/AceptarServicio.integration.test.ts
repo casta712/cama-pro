@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { ConflictoConcurrenciaError, NotFoundError } from "../../../shared/errors/AppError.js";
 import {
+  CamareroConServicioSolapadoError,
   CamareroNoActivoError,
   CupoLlenoError,
   ServicioYaEnCursoError,
@@ -67,6 +68,27 @@ async function insertarServicioFuturo(cuposTotales: number): Promise<string> {
     lugar: { nombre: "Hotel Test", direccion: "Calle Test 1" },
     tipoEvento: "BODA",
     cuposTotales,
+  });
+  await repo.save(servicio);
+  return servicio.id;
+}
+
+async function insertarServicioEn(opts: {
+  inicioEnHoras: number;
+  duracionHoras: number;
+  cuposTotales?: number;
+  lugar?: string;
+}): Promise<string> {
+  const servicio = Servicio.crear({
+    id: randomUUID(),
+    fechaInicio: new Date(Date.now() + opts.inicioEnHoras * HORA_MS),
+    duracionHoras: opts.duracionHoras,
+    lugar: {
+      nombre: opts.lugar ?? "Hotel Test",
+      direccion: "Calle Test 1",
+    },
+    tipoEvento: "BODA",
+    cuposTotales: opts.cuposTotales ?? 2,
   });
   await repo.save(servicio);
   return servicio.id;
@@ -238,6 +260,78 @@ describe("AceptarServicio (integración con Postgres)", () => {
       expect(row.asignaciones.length).toBe(cumplidos.length);
       expect(row.asignaciones.length).toBeLessThanOrEqual(3);
       expect(row.version).toBe(cumplidos.length);
+    });
+  });
+
+  describe("regla de no solape (mismo camarero)", () => {
+    it("bloquea cuando el camarero ya tiene un servicio en el mismo horario", async () => {
+      const camareroId = await insertarCamarero("ACTIVO");
+      const yaAceptado = await insertarServicioEn({
+        inicioEnHoras: 6,
+        duracionHoras: 4,
+        lugar: "Hotel A",
+      });
+      const nuevo = await insertarServicioEn({
+        inicioEnHoras: 6,
+        duracionHoras: 4,
+        lugar: "Hotel B",
+      });
+
+      await aceptarUC.execute({ servicioId: yaAceptado, camareroId });
+
+      await expect(
+        aceptarUC.execute({ servicioId: nuevo, camareroId }),
+      ).rejects.toThrow(CamareroConServicioSolapadoError);
+
+      const asignacionesNuevo = await prisma.asignacion.count({
+        where: { servicioId: nuevo },
+      });
+      expect(asignacionesNuevo).toBe(0);
+    });
+
+    it("permite servicios contiguos (uno termina cuando empieza el otro)", async () => {
+      const camareroId = await insertarCamarero("ACTIVO");
+      const primero = await insertarServicioEn({
+        inicioEnHoras: 6,
+        duracionHoras: 4,
+      }); // [6, 10)
+      const segundo = await insertarServicioEn({
+        inicioEnHoras: 10,
+        duracionHoras: 4,
+      }); // [10, 14)
+
+      await aceptarUC.execute({ servicioId: primero, camareroId });
+      await aceptarUC.execute({ servicioId: segundo, camareroId });
+
+      const total = await prisma.asignacion.count({
+        where: { camareroId },
+      });
+      expect(total).toBe(2);
+    });
+
+    it("permite aceptar otro en el mismo horario si el anterior fue CANCELADO", async () => {
+      const camareroId = await insertarCamarero("ACTIVO");
+      const cancelado = await insertarServicioEn({
+        inicioEnHoras: 6,
+        duracionHoras: 4,
+      });
+      const nuevo = await insertarServicioEn({
+        inicioEnHoras: 6,
+        duracionHoras: 4,
+      });
+
+      await aceptarUC.execute({ servicioId: cancelado, camareroId });
+
+      const agregado = await repo.findById(cancelado);
+      expect(agregado).not.toBeNull();
+      agregado!.cancelar();
+      await repo.save(agregado!);
+
+      const { asignacion } = await aceptarUC.execute({
+        servicioId: nuevo,
+        camareroId,
+      });
+      expect(asignacion.camareroId).toBe(camareroId);
     });
   });
 });

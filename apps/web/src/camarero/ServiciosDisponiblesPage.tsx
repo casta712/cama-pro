@@ -5,8 +5,7 @@ import { Button } from "../shared/ui/Button.js";
 import { EmptyState } from "../shared/ui/EmptyState.js";
 import { PageHeader } from "../shared/ui/PageHeader.js";
 import { ServicioCard } from "../shared/ui/ServicioCard.js";
-import { ApiError } from "../shared/fetchClient.js";
-import { aceptarServicio, listarDisponibles } from "./api.js";
+import { aceptarServicio, listarDisponibles, mensajeErrorAceptar } from "./api.js";
 
 export function ServiciosDisponiblesPage(): JSX.Element {
   const qc = useQueryClient();
@@ -24,14 +23,7 @@ export function ServiciosDisponiblesPage(): JSX.Element {
       qc.invalidateQueries({ queryKey: ["camarero"] });
     },
     onError: (err: unknown) => {
-      const texto =
-        err instanceof ApiError && err.status === 409
-          ? "Otro camarero llego antes. Refresca la lista."
-          : err instanceof ApiError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : "No se pudo aceptar el servicio";
+      const texto = mensajeErrorAceptar(err);
       setAviso({ tipo: "err", texto });
       qc.invalidateQueries({ queryKey: ["camarero", "disponibles"] });
     },

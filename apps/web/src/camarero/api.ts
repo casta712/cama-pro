@@ -3,7 +3,7 @@ import type {
   EditarPerfilCamareroInput,
   ServicioDTO,
 } from "@cama-pro/shared-types";
-import { apiRequest } from "../shared/fetchClient.js";
+import { ApiError, apiRequest } from "../shared/fetchClient.js";
 
 export function obtenerMiCamarero(): Promise<CamareroDTO> {
   return apiRequest<CamareroDTO>("/api/camareros/me");
@@ -38,4 +38,25 @@ export function listarMisAsignaciones(): Promise<ServicioDTO[]> {
 
 export function aceptarServicio(id: string): Promise<AceptarResponse> {
   return apiRequest<AceptarResponse>(`/api/servicios/${id}/aceptar`, { method: "POST" });
+}
+
+/**
+ * Mensaje claro para el usuario al fallar `aceptarServicio`. Distingue por
+ * `code` porque varios 409 representan situaciones muy distintas (otro
+ * camarero llego antes vs. tienes un servicio solapado).
+ */
+export function mensajeErrorAceptar(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.code === "CAMARERO_CON_SERVICIO_SOLAPADO") return err.message;
+    if (
+      err.status === 409 &&
+      (err.code === "CONFLICTO_CONCURRENCIA" ||
+        err.code === "CUPO_LLENO" ||
+        err.code === "SERVICIO_NO_DISPONIBLE")
+    ) {
+      return "Otro camarero llego antes. Refresca la lista.";
+    }
+    return err.message;
+  }
+  return err instanceof Error ? err.message : "No se pudo aceptar el servicio";
 }

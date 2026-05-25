@@ -104,3 +104,20 @@ export class CamareroNoActivoError extends DomainError {
     super("Solo camareros activos pueden aceptar servicios");
   }
 }
+
+export class CamareroConServicioSolapadoError extends DomainError {
+  readonly code = "CAMARERO_CON_SERVICIO_SOLAPADO";
+  override readonly httpStatus = 409;
+  constructor(
+    readonly servicioExistente: {
+      id: string;
+      fechaInicio: Date;
+      duracionHoras: number;
+      lugar: string;
+    },
+  ) {
+    super(
+      `Ya tienes aceptado un servicio en ${servicioExistente.lugar} que se solapa con este horario.`,
+    );
+  }
+}
