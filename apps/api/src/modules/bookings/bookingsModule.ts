@@ -8,6 +8,7 @@ import {
   type VerificarCamareroFn,
 } from "./application/AceptarServicio.js";
 import { CancelarServicio } from "./application/CancelarServicio.js";
+import type { NotificadorDeCambioServicio } from "./domain/ports/NotificadorDeCambioServicio.js";
 import { ObtenerServicio } from "./application/ObtenerServicio.js";
 import { ListarServiciosDisponibles } from "./application/ListarServiciosDisponibles.js";
 import { ListarServiciosDelGestor } from "./application/ListarServiciosDelGestor.js";
@@ -23,6 +24,7 @@ export interface BookingsModuleDeps {
   prisma: PrismaClient;
   verificarCamarero: VerificarCamareroFn;
   obtenerCamarerosContacto: ObtenerCamarerosContactoFn;
+  notificador: NotificadorDeCambioServicio;
   authMiddleware: RequestHandler;
   requireGestor: RequestHandler;
   requireCamarero: RequestHandler;
@@ -36,9 +38,9 @@ export function buildBookingsModule(deps: BookingsModuleDeps): BookingsModule {
   const repo = new PrismaServicioRepository(deps.prisma);
 
   const crear = new CrearServicio(repo);
-  const editar = new EditarServicio(repo);
+  const editar = new EditarServicio(repo, deps.notificador);
   const aceptar = new AceptarServicio(repo, deps.verificarCamarero);
-  const cancelar = new CancelarServicio(repo);
+  const cancelar = new CancelarServicio(repo, deps.notificador);
   const obtener = new ObtenerServicio(repo);
   const listarDisponibles = new ListarServiciosDisponibles(repo);
   const listarGestor = new ListarServiciosDelGestor(repo);

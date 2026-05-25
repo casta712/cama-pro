@@ -1,0 +1,14 @@
+import type { NotificacionRepository } from "../domain/ports/NotificacionRepository.js";
+
+/**
+ * Marca como leidos todos los avisos del camarero. Una sola query masiva
+ * en el repo en vez de cargar y guardar uno por uno, porque el agregado
+ * Notificacion no tiene invariantes que validar al marcar leida.
+ */
+export class MarcarTodosMisAvisosComoLeidos {
+  constructor(private readonly avisos: NotificacionRepository) {}
+
+  async execute(camareroId: string): Promise<void> {
+    await this.avisos.marcarTodasLeidas(camareroId, new Date());
+  }
+}

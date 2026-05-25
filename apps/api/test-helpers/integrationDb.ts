@@ -18,7 +18,7 @@ export async function resetDb(prisma: PrismaClient): Promise<void> {
   // El orden importa: hijas antes que padres. Cascade evita problemas si lo
   // hubieramos cambiado, pero ser explicito documenta el grafo de deps.
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE "asignaciones", "servicios", "usuarios", "camareros" RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE "notificaciones", "asignaciones", "servicios", "usuarios", "camareros" RESTART IDENTITY CASCADE',
   );
 }
 

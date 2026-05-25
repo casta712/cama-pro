@@ -113,3 +113,28 @@ model Asignacion {
   @@index([camareroId])
   @@map("asignaciones")
 }
+
+// =========================================================================
+// Modulo: notifications
+// =========================================================================
+
+enum TipoNotificacion {
+  SERVICIO_CANCELADO
+  SERVICIO_EDITADO
+}
+
+model Notificacion {
+  id          String   @id @default(uuid())
+  camareroId  String
+  tipo        TipoNotificacion
+  servicioId  String
+  // Delta especifico del evento. Cancelacion: snapshot minimo del servicio.
+  // Edicion: { campo: { antes, despues } } solo para los campos que cambiaron.
+  payload     Json
+  leidaEn     DateTime?
+  creadaEn    DateTime @default(now())
+
+  @@index([camareroId, leidaEn])
+  @@index([camareroId, creadaEn(sort: Desc)])
+  @@map("notificaciones")
+}

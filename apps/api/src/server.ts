@@ -19,6 +19,7 @@ export function buildServer() {
   app.use("/api/auth", modules.identity.routes);
   app.use("/api/camareros", modules.staff.routes);
   app.use("/api/servicios", modules.bookings.routes);
+  app.use("/api/avisos", modules.notifications.routes);
 
   app.use(errorHandler);
   return app;

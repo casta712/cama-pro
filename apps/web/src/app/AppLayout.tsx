@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.js";
 import { MenuCuenta } from "../auth/MenuCuenta.js";
+import { AvisosCampana } from "../camarero/AvisosCampana.js";
 
 interface EnlaceNav {
   href: string;
@@ -57,7 +58,8 @@ export function AppLayout(): JSX.Element {
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {usuario?.rol === "CAMARERO" && <AvisosCampana />}
             {usuario && (
               <MenuCuenta usuario={usuario} onCerrarSesion={cerrarSesion} />
             )}
