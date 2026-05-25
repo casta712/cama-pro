@@ -119,10 +119,10 @@ export class PrismaServicioRepository implements ServicioRepository {
   }
 
   async listar(filtro?: ListarFiltro): Promise<Servicio[]> {
+    // El filtro por estado NO se aplica en SQL: EN_CURSO y FINALIZADO (por
+    // tiempo) se computan al vuelo en Servicio.estadoActual() y nunca se
+    // persisten. Filtramos en memoria tras reconstituir el agregado.
     const where: Prisma.ServicioWhereInput = {};
-    if (filtro?.estado) {
-      where.estado = filtro.estado;
-    }
     if (filtro?.soloFuturos) {
       where.fechaInicio = { gt: new Date() };
     }
@@ -133,10 +133,14 @@ export class PrismaServicioRepository implements ServicioRepository {
       orderBy: { fechaInicio: "asc" },
     });
 
-    const servicios = rows.map((r) => this.toDomain(r));
+    let servicios = rows.map((r) => this.toDomain(r));
 
+    if (filtro?.estado) {
+      const estado = filtro.estado;
+      servicios = servicios.filter((s) => s.estadoActual() === estado);
+    }
     if (filtro?.conCupoDisponible) {
-      return servicios.filter((s) => !s.estaCompleto);
+      servicios = servicios.filter((s) => !s.estaCompleto);
     }
     return servicios;
   }
