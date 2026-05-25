@@ -52,6 +52,19 @@ export class Usuario {
     return new Usuario(props);
   }
 
+  /**
+   * Sustituye el hash de la contrasena. El caso de uso debe haber:
+   *  1. Verificado la contrasena actual contra `passwordHash`.
+   *  2. Comprobado que la nueva no coincide con la actual (via hasher.verify).
+   *  3. Validado la fortaleza de la nueva contrasena.
+   *  4. Producido el nuevo hash con el `PasswordHasher`.
+   * Comparar hashes aqui no protege contra "misma contrasena" porque bcrypt
+   * usa salt: el mismo input genera hashes distintos.
+   */
+  cambiarPasswordHash(nuevoHash: string): void {
+    this.props.passwordHash = nuevoHash;
+  }
+
   get id(): string {
     return this.props.id;
   }

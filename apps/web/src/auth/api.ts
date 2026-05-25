@@ -1,4 +1,8 @@
-import type { LoginInput, UsuarioDTO } from "@cama-pro/shared-types";
+import type {
+  CambiarPasswordInput,
+  LoginInput,
+  UsuarioDTO,
+} from "@cama-pro/shared-types";
 import { apiRequest } from "../shared/fetchClient.js";
 
 export interface LoginResponse {
@@ -15,4 +19,11 @@ export function loginRequest(input: LoginInput): Promise<LoginResponse> {
 
 export function meRequest(): Promise<UsuarioDTO> {
   return apiRequest<UsuarioDTO>("/api/auth/me");
+}
+
+export function cambiarPasswordRequest(input: CambiarPasswordInput): Promise<void> {
+  return apiRequest<void>("/api/auth/password", {
+    method: "PATCH",
+    body: input,
+  });
 }

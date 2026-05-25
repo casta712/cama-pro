@@ -8,5 +8,6 @@ export function authRoutes(
   const router = Router();
   router.post("/login", controller.login);
   router.get("/me", authMiddleware, controller.me);
+  router.patch("/password", authMiddleware, controller.cambiarPassword);
   return router;
 }

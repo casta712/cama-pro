@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.js";
+import { CuentaPage } from "../auth/CuentaPage.js";
 import { LoginPage } from "../auth/LoginPage.js";
 import { RegistroCamareroPage } from "../auth/RegistroCamareroPage.js";
 import { ServiciosGestorPage } from "../gestor/ServiciosGestorPage.js";
@@ -80,6 +81,7 @@ export function AppRoutes(): JSX.Element {
         />
 
         <Route path="/servicios/:id" element={<DetalleServicioPage />} />
+        <Route path="/cuenta" element={<CuentaPage />} />
 
         <Route
           path="/disponibles"

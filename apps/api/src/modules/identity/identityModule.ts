@@ -6,6 +6,7 @@ import { BcryptPasswordHasher } from "./infrastructure/BcryptPasswordHasher.js";
 import { JwtTokenService } from "./infrastructure/JwtTokenService.js";
 import { CrearUsuario, type CrearUsuarioInput } from "./application/CrearUsuario.js";
 import { AutenticarUsuario } from "./application/AutenticarUsuario.js";
+import { CambiarPassword } from "./application/CambiarPassword.js";
 import { ObtenerUsuarioActual } from "./application/ObtenerUsuarioActual.js";
 import { AuthController } from "./presentation/authController.js";
 import { createAuthMiddleware, requireRol } from "./presentation/authMiddleware.js";
@@ -38,8 +39,13 @@ export function buildIdentityModule(prisma: PrismaClient): IdentityModule {
   const crearUsuarioUC = new CrearUsuario(usuarios, hasher);
   const autenticarUC = new AutenticarUsuario(usuarios, hasher, tokens);
   const obtenerActualUC = new ObtenerUsuarioActual(usuarios);
+  const cambiarPasswordUC = new CambiarPassword(usuarios, hasher);
 
-  const controller = new AuthController(autenticarUC, obtenerActualUC);
+  const controller = new AuthController(
+    autenticarUC,
+    obtenerActualUC,
+    cambiarPasswordUC,
+  );
   const authMw = createAuthMiddleware(tokens);
   const routes = authRoutes(controller, authMw);
 

@@ -29,6 +29,14 @@ export class PasswordDebilError extends DomainError {
   }
 }
 
+export class PasswordIgualALaActualError extends DomainError {
+  readonly code = "PASSWORD_IGUAL_A_LA_ACTUAL";
+  override readonly httpStatus = 422;
+  constructor() {
+    super("La nueva contrasena no puede ser igual a la actual");
+  }
+}
+
 export class RolUsuarioIncoherenteError extends DomainError {
   readonly code = "ROL_INCOHERENTE";
   constructor(message: string) {

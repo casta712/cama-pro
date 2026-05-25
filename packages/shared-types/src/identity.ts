@@ -25,6 +25,12 @@ export const LoginInput = z.object({
 });
 export type LoginInput = z.infer<typeof LoginInput>;
 
+export const CambiarPasswordInput = z.object({
+  passwordActual: z.string().min(1),
+  passwordNueva: z.string().min(8).max(72),
+});
+export type CambiarPasswordInput = z.infer<typeof CambiarPasswordInput>;
+
 export const UsuarioDTO = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
