@@ -6,6 +6,7 @@ import { ServiciosGestorPage } from "../gestor/ServiciosGestorPage.js";
 import { CrearServicioPage } from "../gestor/CrearServicioPage.js";
 import { EditarServicioPage } from "../gestor/EditarServicioPage.js";
 import { CamarerosGestorPage } from "../gestor/CamarerosGestorPage.js";
+import { DashboardGestorPage } from "../gestor/DashboardGestorPage.js";
 import { ServiciosDisponiblesPage } from "../camarero/ServiciosDisponiblesPage.js";
 import { MisAsignacionesPage } from "../camarero/MisAsignacionesPage.js";
 import { AppLayout } from "./AppLayout.js";
@@ -23,12 +24,10 @@ function Inicio(): JSX.Element {
   if (estado !== "autenticado" || !usuario) {
     return <Navigate to="/login" replace />;
   }
-  return (
-    <Navigate
-      to={usuario.rol === "GESTOR" ? "/gestor/servicios" : "/disponibles"}
-      replace
-    />
-  );
+  if (usuario.rol === "GESTOR") {
+    return <DashboardGestorPage />;
+  }
+  return <Navigate to="/disponibles" replace />;
 }
 
 export function AppRoutes(): JSX.Element {

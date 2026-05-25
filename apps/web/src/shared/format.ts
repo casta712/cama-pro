@@ -18,6 +18,10 @@ const FORMATO_FECHA_LARGA = new Intl.DateTimeFormat("es-ES", {
   year: "numeric",
 });
 
+const FORMATO_DIA_CORTO = new Intl.DateTimeFormat("es-ES", { weekday: "short" });
+const FORMATO_DIA_LARGO = new Intl.DateTimeFormat("es-ES", { weekday: "long" });
+const FORMATO_MES_LARGO = new Intl.DateTimeFormat("es-ES", { month: "long" });
+
 export function formatearFecha(iso: string): string {
   return FORMATO_FECHA.format(new Date(iso)).replace(".", "");
 }
@@ -41,4 +45,41 @@ const ETIQUETAS_EVENTO: Record<TipoEvento, string> = {
 
 export function etiquetaEvento(t: TipoEvento): string {
   return ETIQUETAS_EVENTO[t];
+}
+
+export function nombreDiaCorto(d: Date): string {
+  return FORMATO_DIA_CORTO.format(d).replace(".", "");
+}
+
+export function nombreDiaLargo(d: Date): string {
+  return FORMATO_DIA_LARGO.format(d);
+}
+
+export function nombreMes(d: Date): string {
+  return FORMATO_MES_LARGO.format(d);
+}
+
+/**
+ * Devuelve los 7 dias de la semana que contiene `ahora`, de lunes a domingo.
+ * Util para pintar el strip semanal del dashboard del gestor.
+ */
+export function diasDeLaSemana(ahora: Date = new Date()): Date[] {
+  const base = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  const diaSemana = base.getDay();
+  const offsetALunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+  const lunes = new Date(base);
+  lunes.setDate(base.getDate() + offsetALunes);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(lunes);
+    d.setDate(lunes.getDate() + i);
+    return d;
+  });
+}
+
+export function mismoDiaCalendario(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
