@@ -165,7 +165,11 @@ function ServicioGestorCard({ servicio, onCancelar, cancelando }: CardProps): JS
 
   return (
     <div className="flex flex-col">
-      <ServicioCard servicio={servicio} accion={acciones} />
+      <ServicioCard
+        servicio={servicio}
+        accion={acciones}
+        verDetallePath={`/servicios/${servicio.id}`}
+      />
       {verAsignaciones && tieneAsignaciones && (
         <AsignacionesPanel servicioId={servicio.id} />
       )}

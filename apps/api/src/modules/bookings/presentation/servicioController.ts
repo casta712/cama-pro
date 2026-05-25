@@ -13,6 +13,7 @@ import type { CrearServicio } from "../application/CrearServicio.js";
 import type { EditarServicio } from "../application/EditarServicio.js";
 import type { AceptarServicio } from "../application/AceptarServicio.js";
 import type { CancelarServicio } from "../application/CancelarServicio.js";
+import type { ObtenerServicio } from "../application/ObtenerServicio.js";
 import type { ListarServiciosDisponibles } from "../application/ListarServiciosDisponibles.js";
 import type { ListarServiciosDelGestor } from "../application/ListarServiciosDelGestor.js";
 import type { ListarMisAsignaciones } from "../application/ListarMisAsignaciones.js";
@@ -43,6 +44,7 @@ export class ServicioController {
     private readonly editar: EditarServicio,
     private readonly aceptar: AceptarServicio,
     private readonly cancelar: CancelarServicio,
+    private readonly obtener: ObtenerServicio,
     private readonly listarDisponibles: ListarServiciosDisponibles,
     private readonly listarGestor: ListarServiciosDelGestor,
     private readonly listarMisAsignaciones: ListarMisAsignaciones,
@@ -72,6 +74,18 @@ export class ServicioController {
         fechaInicio: raw.fechaInicio !== undefined ? new Date(raw.fechaInicio) : undefined,
       });
       res.json(toDTO(servicio));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  obtenerHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.usuario) throw new UnauthorizedError();
+      const { id } = IdParam.parse(req.params);
+      const servicio = await this.obtener.execute(id);
+      const camareroId = req.usuario.camareroId ?? undefined;
+      res.json(toDTO(servicio, camareroId));
     } catch (err) {
       next(err);
     }

@@ -30,5 +30,10 @@ export function servicioRoutes(
   router.get("/mis-asignaciones", deps.authMiddleware, deps.requireCamarero, controller.misAsignacionesHandler);
   router.post("/:id/aceptar", deps.authMiddleware, deps.requireCamarero, controller.aceptarHandler);
 
+  // Detalle accesible a cualquier usuario autenticado (gestor o camarero).
+  // Declarada al final para que /disponibles y /mis-asignaciones no caigan
+  // en este patron con :id.
+  router.get("/:id", deps.authMiddleware, controller.obtenerHandler);
+
   return router;
 }

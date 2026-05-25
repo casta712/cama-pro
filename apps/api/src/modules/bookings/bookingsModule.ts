@@ -8,6 +8,7 @@ import {
   type VerificarCamareroFn,
 } from "./application/AceptarServicio.js";
 import { CancelarServicio } from "./application/CancelarServicio.js";
+import { ObtenerServicio } from "./application/ObtenerServicio.js";
 import { ListarServiciosDisponibles } from "./application/ListarServiciosDisponibles.js";
 import { ListarServiciosDelGestor } from "./application/ListarServiciosDelGestor.js";
 import { ListarMisAsignaciones } from "./application/ListarMisAsignaciones.js";
@@ -38,6 +39,7 @@ export function buildBookingsModule(deps: BookingsModuleDeps): BookingsModule {
   const editar = new EditarServicio(repo);
   const aceptar = new AceptarServicio(repo, deps.verificarCamarero);
   const cancelar = new CancelarServicio(repo);
+  const obtener = new ObtenerServicio(repo);
   const listarDisponibles = new ListarServiciosDisponibles(repo);
   const listarGestor = new ListarServiciosDelGestor(repo);
   const listarMisAsignaciones = new ListarMisAsignaciones(repo);
@@ -51,6 +53,7 @@ export function buildBookingsModule(deps: BookingsModuleDeps): BookingsModule {
     editar,
     aceptar,
     cancelar,
+    obtener,
     listarDisponibles,
     listarGestor,
     listarMisAsignaciones,

@@ -9,6 +9,7 @@ import { CamarerosGestorPage } from "../gestor/CamarerosGestorPage.js";
 import { DashboardGestorPage } from "../gestor/DashboardGestorPage.js";
 import { ServiciosDisponiblesPage } from "../camarero/ServiciosDisponiblesPage.js";
 import { MisAsignacionesPage } from "../camarero/MisAsignacionesPage.js";
+import { DetalleServicioPage } from "../shared/DetalleServicioPage.js";
 import { AppLayout } from "./AppLayout.js";
 import { ProtectedRoute } from "./ProtectedRoute.js";
 
@@ -77,6 +78,8 @@ export function AppRoutes(): JSX.Element {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/servicios/:id" element={<DetalleServicioPage />} />
 
         <Route
           path="/disponibles"

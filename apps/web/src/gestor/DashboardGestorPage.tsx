@@ -238,7 +238,12 @@ function FilaServicio({ servicio }: { servicio: ServicioDTO }): JSX.Element {
   const puedeEditar = servicio.estado === "PUBLICADO";
 
   return (
-    <div className="bg-bone border border-line rounded-card p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors hover:border-ink/30">
+    <div className="relative bg-bone border border-line rounded-card p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors hover:border-ink/40">
+      <Link
+        to={`/servicios/${servicio.id}`}
+        aria-label="Ver detalle del servicio"
+        className="absolute inset-0 z-10 rounded-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terra"
+      />
       <div className="flex items-center gap-4 flex-1 min-w-0">
         <DateChip fecha={fecha} />
         <div className="flex-1 min-w-0">
@@ -255,7 +260,7 @@ function FilaServicio({ servicio }: { servicio: ServicioDTO }): JSX.Element {
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-4 sm:shrink-0">
+      <div className="relative z-20 flex items-center gap-4 sm:shrink-0">
         <div className="flex-1 sm:w-32">
           <CupoBar
             ocupados={servicio.cuposOcupados}

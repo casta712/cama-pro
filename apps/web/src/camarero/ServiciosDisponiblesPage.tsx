@@ -80,6 +80,7 @@ export function ServiciosDisponiblesPage(): JSX.Element {
               key={s.id}
               servicio={s}
               destacarAceptado
+              verDetallePath={`/servicios/${s.id}`}
               accion={
                 <BotonAceptar
                   servicio={s}

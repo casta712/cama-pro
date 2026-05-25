@@ -35,7 +35,11 @@ export function MisAsignacionesPage(): JSX.Element {
       {data && data.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.map((s) => (
-            <ServicioCard key={s.id} servicio={s} />
+            <ServicioCard
+              key={s.id}
+              servicio={s}
+              verDetallePath={`/servicios/${s.id}`}
+            />
           ))}
         </div>
       )}

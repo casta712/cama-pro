@@ -1,13 +1,17 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import type { EstadoServicio, ServicioDTO } from "@cama-pro/shared-types";
 import { Badge } from "./Badge.js";
 import { Card } from "./Card.js";
+import { CupoBar } from "./CupoBar.js";
 import { etiquetaEvento, formatearFecha, formatearHora } from "../format.js";
 
 interface Props {
   servicio: ServicioDTO;
   accion?: ReactNode;
   destacarAceptado?: boolean;
+  /** Si se proporciona, toda la card se vuelve un link al detalle, dejando libres los botones de `accion`. */
+  verDetallePath?: string;
 }
 
 const TONO_ESTADO: Record<EstadoServicio, "verde" | "ambar" | "terra" | "neutro" | "wine"> = {
@@ -26,13 +30,25 @@ const ETIQUETA_ESTADO: Record<EstadoServicio, string> = {
   CANCELADO: "cancelado",
 };
 
-export function ServicioCard({ servicio, accion, destacarAceptado }: Props): JSX.Element {
+export function ServicioCard({
+  servicio,
+  accion,
+  destacarAceptado,
+  verDetallePath,
+}: Props): JSX.Element {
   const { fechaInicio, duracionHoras, lugar, tipoEvento, cuposOcupados, cuposTotales, estado, uniforme, notas, yaAceptado } = servicio;
 
   return (
-    <Card className="p-5 sm:p-6 relative">
+    <Card className={["p-5 sm:p-6 relative", verDetallePath ? "hover:border-ink/40 transition-colors" : ""].join(" ")}>
+      {verDetallePath && (
+        <Link
+          to={verDetallePath}
+          aria-label={`Ver detalle del servicio del ${formatearFecha(fechaInicio)}`}
+          className="absolute inset-0 z-10 rounded-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terra"
+        />
+      )}
       {destacarAceptado && yaAceptado && (
-        <div className="absolute -top-2 -right-2">
+        <div className="absolute -top-2 -right-2 z-20">
           <Badge tono="terra">aceptado</Badge>
         </div>
       )}
@@ -72,31 +88,7 @@ export function ServicioCard({ servicio, accion, destacarAceptado }: Props): JSX
         </div>
       )}
 
-      {accion && <div className="mt-5 flex justify-end">{accion}</div>}
+      {accion && <div className="relative z-20 mt-5 flex justify-end">{accion}</div>}
     </Card>
-  );
-}
-
-function CupoBar({ ocupados, totales }: { ocupados: number; totales: number }): JSX.Element {
-  const pct = totales === 0 ? 0 : (ocupados / totales) * 100;
-  return (
-    <div>
-      <div className="flex items-baseline justify-between mb-1.5">
-        <span className="text-xs font-mono uppercase tracking-wider2 text-ash">cupos</span>
-        <span className="text-sm font-mono text-ink">
-          {ocupados}<span className="text-ash">/{totales}</span>
-        </span>
-      </div>
-      <div className="h-1 bg-line rounded-card overflow-hidden">
-        <div
-          className="h-full bg-terra transition-all duration-500 ease-out"
-          style={{ width: `${pct}%` }}
-          role="progressbar"
-          aria-valuenow={ocupados}
-          aria-valuemin={0}
-          aria-valuemax={totales}
-        />
-      </div>
-    </div>
   );
 }
