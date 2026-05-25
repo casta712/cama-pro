@@ -114,15 +114,7 @@ export function DashboardGestorPage(): JSX.Element {
       )}
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-        <PageHeader
-          eyebrow={eyebrowHeader}
-          titulo="Esta semana."
-          accion={
-            <Link to="/gestor/servicios/nuevo">
-              <Button>Nuevo servicio</Button>
-            </Link>
-          }
-        />
+        <PageHeader eyebrow={eyebrowHeader} titulo="Esta semana." />
 
         <section aria-label="Resumen semanal" className="mb-8">
           <div className="grid grid-cols-7 gap-1.5">
