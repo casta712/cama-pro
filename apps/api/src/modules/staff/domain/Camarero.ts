@@ -79,6 +79,45 @@ export class Camarero {
     (this.props as { estadoCuenta: EstadoCuentaCamarero }).estadoCuenta = "SUSPENDIDO";
   }
 
+  /**
+   * Edita los campos mutables del perfil. Mantiene las mismas reglas que
+   * `crear()`: nombre 2..80, telefono 6..20, bio 30..1000.
+   *
+   * Email y estadoCuenta NO son editables aqui: el email vive duplicado en
+   * el agregado Usuario (cambiarlo es un caso de uso distinto cross-context)
+   * y el estado lo mueve el gestor via aprobar/suspender.
+   *
+   * Nota MVP: cambiar la bio NO devuelve la cuenta a PENDIENTE_APROBACION.
+   * Si en el futuro se exige re-revisar la bio, se anade aqui.
+   */
+  editarPerfil(cambios: {
+    nombre?: string;
+    telefono?: string;
+    bio?: string;
+  }): void {
+    if (cambios.nombre !== undefined) {
+      const nombre = cambios.nombre.trim();
+      if (nombre.length < 2 || nombre.length > 80) {
+        throw new NombreInvalidoError();
+      }
+      this.props.nombre = nombre;
+    }
+    if (cambios.telefono !== undefined) {
+      const telefono = cambios.telefono.trim();
+      if (telefono.length < 6 || telefono.length > 20) {
+        throw new TelefonoInvalidoError();
+      }
+      this.props.telefono = telefono;
+    }
+    if (cambios.bio !== undefined) {
+      const bio = cambios.bio.trim();
+      if (bio.length < BIO_MIN_LONGITUD || bio.length > BIO_MAX_LONGITUD) {
+        throw new BioInvalidaError();
+      }
+      this.props.bio = bio;
+    }
+  }
+
   get puedeAceptarServicios(): boolean {
     return this.props.estadoCuenta === "ACTIVO";
   }

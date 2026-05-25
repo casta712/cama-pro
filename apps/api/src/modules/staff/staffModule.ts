@@ -9,6 +9,7 @@ import { AprobarCamarero } from "./application/AprobarCamarero.js";
 import { SuspenderCamarero } from "./application/SuspenderCamarero.js";
 import { ListarCamareros } from "./application/ListarCamareros.js";
 import { ObtenerCamarero } from "./application/ObtenerCamarero.js";
+import { EditarMiPerfilCamarero } from "./application/EditarMiPerfilCamarero.js";
 import { CamareroController } from "./presentation/camareroController.js";
 import { camareroRoutes } from "./presentation/camareroRoutes.js";
 import type { EstadoCuentaCamarero } from "./domain/Camarero.js";
@@ -70,12 +71,15 @@ export function buildStaffModule(deps: StaffModuleDeps): StaffModule {
   const suspenderUC = new SuspenderCamarero(camareros);
   const listarUC = new ListarCamareros(camareros);
   const obtenerUC = new ObtenerCamarero(camareros);
+  const editarMiPerfilUC = new EditarMiPerfilCamarero(camareros);
 
   const controller = new CamareroController(
     registrarUC,
     aprobarUC,
     suspenderUC,
     listarUC,
+    obtenerUC,
+    editarMiPerfilUC,
   );
   const routes = camareroRoutes(controller, deps.authMiddleware, deps.requireGestor);
 

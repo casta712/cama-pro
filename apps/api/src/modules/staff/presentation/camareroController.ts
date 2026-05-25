@@ -1,15 +1,19 @@
 import type { Request, Response, NextFunction } from "express";
 import {
+  EditarPerfilCamareroInput,
   RegistrarCamareroInput,
   ListarCamarerosQuery,
   type CamareroDTO,
 } from "@cama-pro/shared-types";
 import { z } from "zod";
+import { ForbiddenError, UnauthorizedError } from "../../../shared/errors/AppError.js";
 import type { Camarero } from "../domain/Camarero.js";
 import type { RegistrarCamarero } from "../application/RegistrarCamarero.js";
 import type { AprobarCamarero } from "../application/AprobarCamarero.js";
 import type { SuspenderCamarero } from "../application/SuspenderCamarero.js";
 import type { ListarCamareros } from "../application/ListarCamareros.js";
+import type { ObtenerCamarero } from "../application/ObtenerCamarero.js";
+import type { EditarMiPerfilCamarero } from "../application/EditarMiPerfilCamarero.js";
 
 const IdParam = z.object({ id: z.string().uuid() });
 
@@ -31,7 +35,38 @@ export class CamareroController {
     private readonly aprobar: AprobarCamarero,
     private readonly suspender: SuspenderCamarero,
     private readonly listar: ListarCamareros,
+    private readonly obtener: ObtenerCamarero,
+    private readonly editarMiPerfil: EditarMiPerfilCamarero,
   ) {}
+
+  private requireCamareroId(req: Request): string {
+    if (!req.usuario) throw new UnauthorizedError();
+    if (req.usuario.rol !== "CAMARERO" || !req.usuario.camareroId) {
+      throw new ForbiddenError("Solo accesible para camareros");
+    }
+    return req.usuario.camareroId;
+  }
+
+  meHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const camareroId = this.requireCamareroId(req);
+      const camarero = await this.obtener.execute(camareroId);
+      res.json(toDTO(camarero));
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  editarMeHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const camareroId = this.requireCamareroId(req);
+      const cambios = EditarPerfilCamareroInput.parse(req.body);
+      const camarero = await this.editarMiPerfil.execute({ camareroId, cambios });
+      res.json(toDTO(camarero));
+    } catch (err) {
+      next(err);
+    }
+  };
 
   registro = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

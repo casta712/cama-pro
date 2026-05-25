@@ -100,4 +100,58 @@ describe("Camarero (agregado)", () => {
     expect(c.bio).toBe(BIO_VALIDA);
     expect(c.bio.length).toBeGreaterThanOrEqual(BIO_MIN_LONGITUD);
   });
+
+  describe("editarPerfil()", () => {
+    it("actualiza nombre, telefono y bio recortando espacios", () => {
+      const c = Camarero.crear(baseInput);
+      const nuevaBio = BIO_VALIDA.replace("Cinco", "Diez");
+      c.editarPerfil({
+        nombre: "  Juana Perez  ",
+        telefono: "  600999888  ",
+        bio: `  ${nuevaBio}  `,
+      });
+      expect(c.nombre).toBe("Juana Perez");
+      expect(c.telefono).toBe("600999888");
+      expect(c.bio).toBe(nuevaBio);
+    });
+
+    it("ignora campos no proporcionados (cambio parcial)", () => {
+      const c = Camarero.crear(baseInput);
+      c.editarPerfil({ telefono: "699111222" });
+      expect(c.telefono).toBe("699111222");
+      expect(c.nombre).toBe(baseInput.nombre);
+      expect(c.bio).toBe(baseInput.bio);
+    });
+
+    it("rechaza nombre invalido", () => {
+      const c = Camarero.crear(baseInput);
+      expect(() => c.editarPerfil({ nombre: "x" })).toThrow(NombreInvalidoError);
+      expect(() =>
+        c.editarPerfil({ nombre: "y".repeat(81) }),
+      ).toThrow(NombreInvalidoError);
+    });
+
+    it("rechaza telefono invalido", () => {
+      const c = Camarero.crear(baseInput);
+      expect(() => c.editarPerfil({ telefono: "123" })).toThrow(
+        TelefonoInvalidoError,
+      );
+    });
+
+    it("rechaza bio invalida", () => {
+      const c = Camarero.crear(baseInput);
+      expect(() => c.editarPerfil({ bio: "corta" })).toThrow(BioInvalidaError);
+      expect(() => c.editarPerfil({ bio: "y".repeat(1001) })).toThrow(
+        BioInvalidaError,
+      );
+    });
+
+    it("no cambia estadoCuenta ni email aunque se llame a editarPerfil", () => {
+      const c = Camarero.crear(baseInput);
+      c.aprobar();
+      c.editarPerfil({ nombre: "Otro Nombre" });
+      expect(c.estadoCuenta).toBe("ACTIVO");
+      expect(c.email).toBe(baseInput.email);
+    });
+  });
 });

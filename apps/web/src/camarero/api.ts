@@ -1,5 +1,22 @@
-import type { ServicioDTO } from "@cama-pro/shared-types";
+import type {
+  CamareroDTO,
+  EditarPerfilCamareroInput,
+  ServicioDTO,
+} from "@cama-pro/shared-types";
 import { apiRequest } from "../shared/fetchClient.js";
+
+export function obtenerMiCamarero(): Promise<CamareroDTO> {
+  return apiRequest<CamareroDTO>("/api/camareros/me");
+}
+
+export function editarMiCamarero(
+  cambios: EditarPerfilCamareroInput,
+): Promise<CamareroDTO> {
+  return apiRequest<CamareroDTO>("/api/camareros/me", {
+    method: "PATCH",
+    body: cambios,
+  });
+}
 
 export interface AceptarResponse {
   asignacion: {
