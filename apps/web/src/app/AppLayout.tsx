@@ -1,5 +1,6 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.js";
+import { MenuCuenta } from "../auth/MenuCuenta.js";
 
 interface EnlaceNav {
   href: string;
@@ -7,6 +8,7 @@ interface EnlaceNav {
 }
 
 const enlacesGestor: ReadonlyArray<EnlaceNav> = [
+  { href: "/", label: "Inicio" },
   { href: "/gestor/servicios", label: "Servicios" },
   { href: "/gestor/camareros", label: "Camareros" },
 ];
@@ -18,7 +20,6 @@ const enlacesCamarero: ReadonlyArray<EnlaceNav> = [
 
 export function AppLayout(): JSX.Element {
   const { usuario, cerrarSesion } = useAuth();
-  const navigate = useNavigate();
 
   const enlaces =
     usuario?.rol === "GESTOR"
@@ -26,11 +27,6 @@ export function AppLayout(): JSX.Element {
       : usuario?.rol === "CAMARERO"
         ? enlacesCamarero
         : [];
-
-  const onCerrarSesion = (): void => {
-    cerrarSesion();
-    navigate("/login", { replace: true });
-  };
 
   return (
     <div className="min-h-full flex flex-col">
@@ -46,6 +42,7 @@ export function AppLayout(): JSX.Element {
               <NavLink
                 key={e.href}
                 to={e.href}
+                end={e.href === "/"}
                 className={({ isActive }) =>
                   [
                     "px-3 py-1.5 text-sm transition-colors",
@@ -62,17 +59,7 @@ export function AppLayout(): JSX.Element {
 
           <div className="flex items-center gap-3">
             {usuario && (
-              <span className="hidden md:inline text-xs font-mono uppercase tracking-wider2 text-ash">
-                {usuario.rol.toLowerCase()} · {usuario.email}
-              </span>
-            )}
-            {usuario && (
-              <button
-                onClick={onCerrarSesion}
-                className="text-xs font-mono uppercase tracking-wider2 text-ash hover:text-terra transition-colors"
-              >
-                salir
-              </button>
+              <MenuCuenta usuario={usuario} onCerrarSesion={cerrarSesion} />
             )}
           </div>
         </div>
