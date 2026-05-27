@@ -1,7 +1,10 @@
-export type TipoNotificacion = "SERVICIO_CANCELADO" | "SERVICIO_EDITADO";
+export type TipoNotificacion =
+  | "SERVICIO_CANCELADO"
+  | "SERVICIO_EDITADO"
+  | "SERVICIO_LIBERADO";
 
 /**
- * Snapshot minimo del servicio para que el camarero entienda de cual se
+ * Snapshot minimo del servicio para que el destinatario entienda de cual se
  * trata sin tener que abrir el detalle (lugar, cuando). Se copia en el
  * payload porque la notificacion debe ser legible aunque el servicio se
  * borre o cambie a futuro.
@@ -10,6 +13,11 @@ export interface ServicioSnapshot {
   readonly lugar: string;
   readonly fechaInicio: string; // ISO 8601
   readonly duracionHoras: number;
+}
+
+export interface ActorCamarero {
+  readonly id: string;
+  readonly nombre: string;
 }
 
 export interface PayloadServicioCancelado {
@@ -37,13 +45,23 @@ export interface PayloadServicioEditado {
   readonly cambios: CambiosEdicion;
 }
 
+/**
+ * Aviso al gestor: un camarero abandono una asignacion previamente aceptada.
+ * El payload lleva el actor (camarero) ademas del snapshot del servicio.
+ */
+export interface PayloadServicioLiberado {
+  readonly servicio: ServicioSnapshot;
+  readonly camarero: ActorCamarero;
+}
+
 export type PayloadNotificacion =
   | PayloadServicioCancelado
-  | PayloadServicioEditado;
+  | PayloadServicioEditado
+  | PayloadServicioLiberado;
 
 interface NotificacionProps {
   id: string;
-  camareroId: string;
+  usuarioId: string;
   tipo: TipoNotificacion;
   servicioId: string;
   payload: PayloadNotificacion;
@@ -54,21 +72,25 @@ interface NotificacionProps {
 /**
  * Agregado Notificacion. Trivial: solo encapsula la transicion
  * no-leida -> leida (idempotente). El contenido es inmutable; el avisador
- * cross-context crea instancias completas con `crear()`.
+ * cross-context crea instancias completas con las factories.
+ *
+ * El destinatario es un Usuario (cualquier rol). Para avisos a camareros,
+ * usuarioId apunta al Usuario.id del camarero (no a Camarero.id). Para
+ * avisos al gestor, apunta al Usuario.id de un gestor.
  */
 export class Notificacion {
   private constructor(private readonly props: NotificacionProps) {}
 
   static crearCancelacion(input: {
     id: string;
-    camareroId: string;
+    usuarioId: string;
     servicioId: string;
     payload: PayloadServicioCancelado;
     creadaEn?: Date;
   }): Notificacion {
     return new Notificacion({
       id: input.id,
-      camareroId: input.camareroId,
+      usuarioId: input.usuarioId,
       tipo: "SERVICIO_CANCELADO",
       servicioId: input.servicioId,
       payload: input.payload,
@@ -79,15 +101,33 @@ export class Notificacion {
 
   static crearEdicion(input: {
     id: string;
-    camareroId: string;
+    usuarioId: string;
     servicioId: string;
     payload: PayloadServicioEditado;
     creadaEn?: Date;
   }): Notificacion {
     return new Notificacion({
       id: input.id,
-      camareroId: input.camareroId,
+      usuarioId: input.usuarioId,
       tipo: "SERVICIO_EDITADO",
+      servicioId: input.servicioId,
+      payload: input.payload,
+      leidaEn: null,
+      creadaEn: input.creadaEn ?? new Date(),
+    });
+  }
+
+  static crearLiberacion(input: {
+    id: string;
+    usuarioId: string;
+    servicioId: string;
+    payload: PayloadServicioLiberado;
+    creadaEn?: Date;
+  }): Notificacion {
+    return new Notificacion({
+      id: input.id,
+      usuarioId: input.usuarioId,
+      tipo: "SERVICIO_LIBERADO",
       servicioId: input.servicioId,
       payload: input.payload,
       leidaEn: null,
@@ -101,7 +141,7 @@ export class Notificacion {
 
   /**
    * Marca el aviso como leido. Idempotente: si ya estaba leido, no hace nada
-   * (no lanza error). El gestor del estado leido es el camarero dueño, no
+   * (no lanza error). El gestor del estado leido es el usuario dueño, no
    * el agregado: la validacion de ownership la hace el caso de uso.
    */
   marcarLeida(ahora: Date = new Date()): void {
@@ -112,8 +152,8 @@ export class Notificacion {
   get id(): string {
     return this.props.id;
   }
-  get camareroId(): string {
-    return this.props.camareroId;
+  get usuarioId(): string {
+    return this.props.usuarioId;
   }
   get tipo(): TipoNotificacion {
     return this.props.tipo;

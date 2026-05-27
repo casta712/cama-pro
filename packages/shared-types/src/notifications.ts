@@ -4,6 +4,7 @@ import { TipoEvento } from "./bookings.js";
 export const TipoNotificacion = z.enum([
   "SERVICIO_CANCELADO",
   "SERVICIO_EDITADO",
+  "SERVICIO_LIBERADO",
 ]);
 export type TipoNotificacion = z.infer<typeof TipoNotificacion>;
 
@@ -44,6 +45,18 @@ export const PayloadServicioEditado = z.object({
 });
 export type PayloadServicioEditado = z.infer<typeof PayloadServicioEditado>;
 
+export const ActorCamarero = z.object({
+  id: z.string().uuid(),
+  nombre: z.string(),
+});
+export type ActorCamarero = z.infer<typeof ActorCamarero>;
+
+export const PayloadServicioLiberado = z.object({
+  servicio: ServicioSnapshot,
+  camarero: ActorCamarero,
+});
+export type PayloadServicioLiberado = z.infer<typeof PayloadServicioLiberado>;
+
 const camposComunes = {
   id: z.string().uuid(),
   servicioId: z.string().uuid(),
@@ -64,6 +77,11 @@ export const NotificacionDTO = z.discriminatedUnion("tipo", [
     ...camposComunes,
     tipo: z.literal("SERVICIO_EDITADO"),
     payload: PayloadServicioEditado,
+  }),
+  z.object({
+    ...camposComunes,
+    tipo: z.literal("SERVICIO_LIBERADO"),
+    payload: PayloadServicioLiberado,
   }),
 ]);
 export type NotificacionDTO = z.infer<typeof NotificacionDTO>;

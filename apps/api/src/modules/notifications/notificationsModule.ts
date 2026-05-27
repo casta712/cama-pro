@@ -1,8 +1,18 @@
 import type { PrismaClient } from "@prisma/client";
 import type { Router, RequestHandler } from "express";
-import type { NotificadorDeCambioServicio } from "../bookings/index.js";
+import type {
+  NotificadorDeCambioServicio,
+  NotificadorDeMovimientoAsignacion,
+} from "../bookings/index.js";
 import { PrismaNotificacionRepository } from "./infrastructure/PrismaNotificacionRepository.js";
-import { NotificadorDeCambioServicioEnDB } from "./infrastructure/NotificadorDeCambioServicioEnDB.js";
+import {
+  NotificadorDeCambioServicioEnDB,
+  type ResolverUsuariosDeCamarerosFn,
+} from "./infrastructure/NotificadorDeCambioServicioEnDB.js";
+import {
+  NotificadorDeMovimientoAsignacionEnDB,
+  type ListarUsuariosGestorFn,
+} from "./infrastructure/NotificadorDeMovimientoAsignacionEnDB.js";
 import { ListarMisAvisos } from "./application/ListarMisAvisos.js";
 import { ContarMisAvisosNoLeidos } from "./application/ContarMisAvisosNoLeidos.js";
 import { MarcarAvisoComoLeido } from "./application/MarcarAvisoComoLeido.js";
@@ -13,16 +23,18 @@ import { avisoRoutes } from "./presentation/avisoRoutes.js";
 export interface NotificationsModuleDeps {
   prisma: PrismaClient;
   authMiddleware: RequestHandler;
-  requireCamarero: RequestHandler;
+  /** Cross-context (identity): camareroId -> Usuario.id. */
+  resolverUsuariosDeCamareros: ResolverUsuariosDeCamarerosFn;
+  /** Cross-context (identity): Usuario.id de todos los gestores. */
+  listarGestorUsuarioIds: ListarUsuariosGestorFn;
 }
 
 export interface NotificationsModule {
   routes: Router;
-  /**
-   * Implementacion del puerto que bookings inyecta para emitir avisos
-   * cuando se cancela o edita un servicio con asignaciones.
-   */
+  /** Avisos al camarero por cancelacion / edicion del servicio. */
   notificador: NotificadorDeCambioServicio;
+  /** Avisos al gestor por movimientos en asignaciones (hoy: liberar). */
+  notificadorMovimientoAsignacion: NotificadorDeMovimientoAsignacion;
 }
 
 export function buildNotificationsModule(
@@ -41,9 +53,17 @@ export function buildNotificationsModule(
     marcarLeidoUC,
     marcarTodosUC,
   );
-  const routes = avisoRoutes(controller, deps.authMiddleware, deps.requireCamarero);
+  const routes = avisoRoutes(controller, deps.authMiddleware);
 
-  const notificador = new NotificadorDeCambioServicioEnDB(repo);
+  const notificador = new NotificadorDeCambioServicioEnDB(
+    repo,
+    deps.resolverUsuariosDeCamareros,
+  );
+  const notificadorMovimientoAsignacion =
+    new NotificadorDeMovimientoAsignacionEnDB(
+      repo,
+      deps.listarGestorUsuarioIds,
+    );
 
-  return { routes, notificador };
+  return { routes, notificador, notificadorMovimientoAsignacion };
 }

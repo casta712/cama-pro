@@ -40,6 +40,13 @@ export function aceptarServicio(id: string): Promise<AceptarResponse> {
   return apiRequest<AceptarResponse>(`/api/servicios/${id}/aceptar`, { method: "POST" });
 }
 
+/** Libera (abandona) la asignacion del camarero autenticado en el servicio. */
+export function liberarMiAsignacion(id: string): Promise<void> {
+  return apiRequest<void>(`/api/servicios/${id}/mi-asignacion`, {
+    method: "DELETE",
+  });
+}
+
 /**
  * Mensaje claro para el usuario al fallar `aceptarServicio`. Distingue por
  * `code` porque varios 409 representan situaciones muy distintas (otro

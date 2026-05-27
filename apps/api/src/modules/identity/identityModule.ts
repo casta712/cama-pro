@@ -20,6 +20,20 @@ import type { Rol } from "./domain/Usuario.js";
  */
 export interface IdentityPublicApi {
   crearUsuario(input: CrearUsuarioInput): Promise<{ id: string; email: string; rol: Rol }>;
+  /**
+   * Ids de Usuario.id de todos los usuarios con el rol dado.
+   * Lo usa el modulo notifications para resolver destinatarios cuando
+   * un evento debe llegar a "todos los gestores".
+   */
+  listarIdsPorRol(rol: Rol): Promise<string[]>;
+  /**
+   * Traduce un batch de Camarero.id a su Usuario.id correspondiente.
+   * El notificador a camareros lo usa para persistir avisos por usuarioId
+   * cuando bookings le entrega camareroIds (bookings no conoce Usuarios).
+   */
+  resolverUsuariosDeCamareros(
+    camareroIds: ReadonlyArray<string>,
+  ): Promise<Map<string, string>>;
 }
 
 export interface IdentityModule {
@@ -57,6 +71,9 @@ export function buildIdentityModule(prisma: PrismaClient): IdentityModule {
         const u = await crearUsuarioUC.execute(input);
         return { id: u.id, email: u.email.value, rol: u.rol };
       },
+      listarIdsPorRol: (rol) => usuarios.listarIdsPorRol(rol),
+      resolverUsuariosDeCamareros: (ids) =>
+        usuarios.resolverUsuariosDeCamareros(ids),
     },
   };
 }

@@ -14,6 +14,14 @@ import type {
 import type { NotificacionRepository } from "../domain/ports/NotificacionRepository.js";
 
 /**
+ * Resolver cross-context: traduce camareroIds (lo que bookings conoce) a
+ * usuarioIds (clave de Notificacion). Lo implementa identity.
+ */
+export type ResolverUsuariosDeCamarerosFn = (
+  camareroIds: ReadonlyArray<string>,
+) => Promise<Map<string, string>>;
+
+/**
  * Implementacion del notificador cross-context: persiste las
  * notificaciones en la BD del modulo notifications.
  *
@@ -24,35 +32,52 @@ import type { NotificacionRepository } from "../domain/ports/NotificacionReposit
 export class NotificadorDeCambioServicioEnDB
   implements NotificadorDeCambioServicio
 {
-  constructor(private readonly avisos: NotificacionRepository) {}
+  constructor(
+    private readonly avisos: NotificacionRepository,
+    private readonly resolverUsuarios: ResolverUsuariosDeCamarerosFn,
+  ) {}
 
   async notificarCancelacion(input: NotificarCancelacionInput): Promise<void> {
     if (input.camareroIds.length === 0) return;
+    const usuarios = await this.resolverUsuarios(input.camareroIds);
+    if (usuarios.size === 0) return; // ningun destinatario resoluble
     const snapshot = mapServicio(input.servicio);
-    const avisos = input.camareroIds.map((camareroId) =>
-      Notificacion.crearCancelacion({
-        id: randomUUID(),
-        camareroId,
-        servicioId: input.servicioId,
-        payload: { servicio: snapshot },
-      }),
-    );
+    const avisos: Notificacion[] = [];
+    for (const camareroId of input.camareroIds) {
+      const usuarioId = usuarios.get(camareroId);
+      if (!usuarioId) continue; // camarero sin usuario asociado, se omite
+      avisos.push(
+        Notificacion.crearCancelacion({
+          id: randomUUID(),
+          usuarioId,
+          servicioId: input.servicioId,
+          payload: { servicio: snapshot },
+        }),
+      );
+    }
     await this.avisos.saveMany(avisos);
   }
 
   async notificarEdicion(input: NotificarEdicionInput): Promise<void> {
     if (input.camareroIds.length === 0) return;
     if (esCambioVacio(input.cambios)) return; // nada que comunicar
+    const usuarios = await this.resolverUsuarios(input.camareroIds);
+    if (usuarios.size === 0) return;
     const snapshot = mapServicio(input.servicio);
     const cambios = mapCambios(input.cambios);
-    const avisos = input.camareroIds.map((camareroId) =>
-      Notificacion.crearEdicion({
-        id: randomUUID(),
-        camareroId,
-        servicioId: input.servicioId,
-        payload: { servicio: snapshot, cambios },
-      }),
-    );
+    const avisos: Notificacion[] = [];
+    for (const camareroId of input.camareroIds) {
+      const usuarioId = usuarios.get(camareroId);
+      if (!usuarioId) continue;
+      avisos.push(
+        Notificacion.crearEdicion({
+          id: randomUUID(),
+          usuarioId,
+          servicioId: input.servicioId,
+          payload: { servicio: snapshot, cambios },
+        }),
+      );
+    }
     await this.avisos.saveMany(avisos);
   }
 }

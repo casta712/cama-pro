@@ -33,7 +33,9 @@ export function buildModules(prisma: PrismaClient): AppModules {
   const notifications = buildNotificationsModule({
     prisma,
     authMiddleware: identity.middleware.auth,
-    requireCamarero: identity.middleware.requireRol("CAMARERO"),
+    resolverUsuariosDeCamareros: (ids) =>
+      identity.publicApi.resolverUsuariosDeCamareros(ids),
+    listarGestorUsuarioIds: () => identity.publicApi.listarIdsPorRol("GESTOR"),
   });
 
   const bookings = buildBookingsModule({
@@ -45,6 +47,8 @@ export function buildModules(prisma: PrismaClient): AppModules {
     obtenerCamarerosContacto: (ids) =>
       staff.publicApi.obtenerCamarerosContactoBatch(ids),
     notificador: notifications.notificador,
+    notificadorMovimientoAsignacion:
+      notifications.notificadorMovimientoAsignacion,
     authMiddleware: identity.middleware.auth,
     requireGestor: identity.middleware.requireRol("GESTOR"),
     requireCamarero: identity.middleware.requireRol("CAMARERO"),

@@ -12,7 +12,7 @@ import { CamarerosGestorPage } from "../gestor/CamarerosGestorPage.js";
 import { DashboardGestorPage } from "../gestor/DashboardGestorPage.js";
 import { ServiciosDisponiblesPage } from "../camarero/ServiciosDisponiblesPage.js";
 import { MisAsignacionesPage } from "../camarero/MisAsignacionesPage.js";
-import { AvisosPage } from "../camarero/AvisosPage.js";
+import { AvisosPage } from "../shared/avisos/AvisosPage.js";
 import { DetalleServicioPage } from "../shared/DetalleServicioPage.js";
 import { AppLayout } from "./AppLayout.js";
 import { ProtectedRoute } from "./ProtectedRoute.js";
@@ -104,14 +104,7 @@ export function AppRoutes(): JSX.Element {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/avisos"
-          element={
-            <ProtectedRoute rol="CAMARERO">
-              <AvisosPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/avisos" element={<AvisosPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

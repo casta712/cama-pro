@@ -13,6 +13,7 @@ import type { CrearServicio } from "../application/CrearServicio.js";
 import type { EditarServicio } from "../application/EditarServicio.js";
 import type { AceptarServicio } from "../application/AceptarServicio.js";
 import type { CancelarServicio } from "../application/CancelarServicio.js";
+import type { LiberarAsignacion } from "../application/LiberarAsignacion.js";
 import type { ObtenerServicio } from "../application/ObtenerServicio.js";
 import type { ListarServiciosDisponibles } from "../application/ListarServiciosDisponibles.js";
 import type { ListarServiciosDelGestor } from "../application/ListarServiciosDelGestor.js";
@@ -44,6 +45,7 @@ export class ServicioController {
     private readonly editar: EditarServicio,
     private readonly aceptar: AceptarServicio,
     private readonly cancelar: CancelarServicio,
+    private readonly liberar: LiberarAsignacion,
     private readonly obtener: ObtenerServicio,
     private readonly listarDisponibles: ListarServiciosDisponibles,
     private readonly listarGestor: ListarServiciosDelGestor,
@@ -141,6 +143,22 @@ export class ServicioController {
         },
         servicio: toDTO(servicio, req.usuario.camareroId),
       });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  liberarAsignacionHandler = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.usuario?.camareroId) {
+        throw new ForbiddenError("Solo camareros pueden liberar asignaciones");
+      }
+      const { id } = IdParam.parse(req.params);
+      await this.liberar.execute({
+        servicioId: id,
+        camareroId: req.usuario.camareroId,
+      });
+      res.status(204).send();
     } catch (err) {
       next(err);
     }

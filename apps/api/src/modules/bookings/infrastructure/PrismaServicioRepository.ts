@@ -96,12 +96,17 @@ export class PrismaServicioRepository implements ServicioRepository {
         }
       }
 
-      // Asignaciones append-only en MVP: insertamos solo las nuevas.
+      // Reconciliacion de asignaciones: insertamos las nuevas y borramos
+      // las que ya no estan en el agregado en memoria (caso liberar).
+      // El bloqueo optimista de mas arriba garantiza que no nos pisamos
+      // con otra operacion concurrente sobre el mismo servicio.
       const existentes = await tx.asignacion.findMany({
         where: { servicioId: servicio.id },
         select: { id: true },
       });
       const idsExistentes = new Set(existentes.map((a) => a.id));
+      const idsEnMemoria = new Set(servicio.asignaciones.map((a) => a.id));
+
       const nuevas = servicio.asignaciones.filter(
         (a) => !idsExistentes.has(a.id),
       );
@@ -113,6 +118,13 @@ export class PrismaServicioRepository implements ServicioRepository {
             camareroId: a.camareroId,
             aceptadaEn: a.aceptadaEn,
           })),
+        });
+      }
+
+      const aBorrar = [...idsExistentes].filter((id) => !idsEnMemoria.has(id));
+      if (aBorrar.length > 0) {
+        await tx.asignacion.deleteMany({
+          where: { id: { in: aBorrar } },
         });
       }
     });

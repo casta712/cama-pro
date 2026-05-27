@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { NotificacionDTO } from "@cama-pro/shared-types";
-import { Badge } from "../shared/ui/Badge.js";
-import { Button } from "../shared/ui/Button.js";
-import { EmptyState } from "../shared/ui/EmptyState.js";
-import { PageHeader } from "../shared/ui/PageHeader.js";
+import { Badge } from "../ui/Badge.js";
+import { Button } from "../ui/Button.js";
+import { EmptyState } from "../ui/EmptyState.js";
+import { PageHeader } from "../ui/PageHeader.js";
 import {
   etiquetaEvento,
   formatearFecha,
   formatearHora,
-} from "../shared/format.js";
+} from "../format.js";
 import {
   listarMisAvisos,
   marcarAvisoLeido,
@@ -21,13 +21,13 @@ export function AvisosPage(): JSX.Element {
   const navigate = useNavigate();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["camarero", "avisos"],
+    queryKey: ["avisos"],
     queryFn: listarMisAvisos,
   });
 
   const invalidar = (): void => {
-    qc.invalidateQueries({ queryKey: ["camarero", "avisos"] });
-    qc.invalidateQueries({ queryKey: ["camarero", "avisos", "count"] });
+    qc.invalidateQueries({ queryKey: ["avisos"] });
+    qc.invalidateQueries({ queryKey: ["avisos", "count"] });
   };
 
   const marcarUno = useMutation({
@@ -54,7 +54,7 @@ export function AvisosPage(): JSX.Element {
       <PageHeader
         eyebrow="Tu actividad"
         titulo="Avisos."
-        subtitulo="Cambios en los servicios que has aceptado."
+        subtitulo="Cambios en los servicios que te afectan."
         accion={
           hayNoLeidos ? (
             <Button
@@ -79,7 +79,7 @@ export function AvisosPage(): JSX.Element {
       {data && data.length === 0 && (
         <EmptyState
           titulo="Sin avisos."
-          descripcion="Aqui apareceran los cambios y cancelaciones en los servicios que has aceptado."
+          descripcion="Aqui apareceran los cambios relevantes sobre tus servicios."
         />
       )}
 
@@ -120,9 +120,7 @@ function AvisoFila({ aviso, onAbrir }: FilaProps): JSX.Element {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge tono={aviso.tipo === "SERVICIO_CANCELADO" ? "wine" : "ambar"}>
-              {aviso.tipo === "SERVICIO_CANCELADO" ? "Cancelado" : "Modificado"}
-            </Badge>
+            <BadgeTipo tipo={aviso.tipo} />
             <span className="font-display text-[17px] tracking-editorial">
               {aviso.payload.servicio.lugar}
             </span>
@@ -151,9 +149,25 @@ function AvisoFila({ aviso, onAbrir }: FilaProps): JSX.Element {
   );
 }
 
+function BadgeTipo({ tipo }: { tipo: NotificacionDTO["tipo"] }): JSX.Element {
+  if (tipo === "SERVICIO_CANCELADO") return <Badge tono="wine">Cancelado</Badge>;
+  if (tipo === "SERVICIO_EDITADO") return <Badge tono="ambar">Modificado</Badge>;
+  return <Badge tono="wine">Abandonado</Badge>;
+}
+
 function CuerpoAviso({ aviso }: { aviso: NotificacionDTO }): JSX.Element {
   if (aviso.tipo === "SERVICIO_CANCELADO") {
     return <p>El gestor ha cancelado este servicio.</p>;
+  }
+  if (aviso.tipo === "SERVICIO_LIBERADO") {
+    return (
+      <p>
+        <span className="text-ink font-medium">
+          {aviso.payload.camarero.nombre}
+        </span>{" "}
+        ha abandonado su asignacion en este servicio.
+      </p>
+    );
   }
   const { cambios } = aviso.payload;
   return (

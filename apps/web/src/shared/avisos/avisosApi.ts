@@ -3,7 +3,7 @@ import type {
   ListarAvisosResponse,
   NotificacionDTO,
 } from "@cama-pro/shared-types";
-import { apiRequest } from "../shared/fetchClient.js";
+import { apiRequest } from "../fetchClient.js";
 
 export async function listarMisAvisos(): Promise<NotificacionDTO[]> {
   const res = await apiRequest<ListarAvisosResponse>("/api/avisos");

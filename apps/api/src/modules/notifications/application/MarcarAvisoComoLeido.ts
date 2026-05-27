@@ -5,13 +5,13 @@ import {
 import type { NotificacionRepository } from "../domain/ports/NotificacionRepository.js";
 
 export interface MarcarAvisoComoLeidoInput {
-  camareroId: string;
+  usuarioId: string;
   avisoId: string;
 }
 
 /**
  * Marca un aviso como leido. Idempotente: si ya estaba leido, no hace nada.
- * Valida que el aviso pertenezca al camarero que pide la accion para no
+ * Valida que el aviso pertenezca al usuario que pide la accion para no
  * filtrar avisos ajenos.
  */
 export class MarcarAvisoComoLeido {
@@ -22,7 +22,7 @@ export class MarcarAvisoComoLeido {
     if (!aviso) {
       throw new NotFoundError("Aviso", input.avisoId);
     }
-    if (aviso.camareroId !== input.camareroId) {
+    if (aviso.usuarioId !== input.usuarioId) {
       throw new ForbiddenError("El aviso no pertenece al usuario actual");
     }
     if (aviso.estaLeida) return; // idempotente, evita escritura innecesaria

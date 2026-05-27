@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { Usuario } from "../domain/Usuario.js";
+import { Usuario, type Rol } from "../domain/Usuario.js";
 import { Email } from "../domain/value-objects/Email.js";
 import type { UsuarioRepository } from "../domain/ports/UsuarioRepository.js";
 
@@ -51,6 +51,29 @@ export class PrismaUsuarioRepository implements UsuarioRepository {
         camareroId: usuario.camareroId,
       },
     });
+  }
+
+  async listarIdsPorRol(rol: Rol): Promise<string[]> {
+    const rows = await this.prisma.usuario.findMany({
+      where: { rol },
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
+
+  async resolverUsuariosDeCamareros(
+    camareroIds: ReadonlyArray<string>,
+  ): Promise<Map<string, string>> {
+    if (camareroIds.length === 0) return new Map();
+    const rows = await this.prisma.usuario.findMany({
+      where: { camareroId: { in: [...camareroIds] } },
+      select: { id: true, camareroId: true },
+    });
+    const m = new Map<string, string>();
+    for (const r of rows) {
+      if (r.camareroId) m.set(r.camareroId, r.id);
+    }
+    return m;
   }
 
   private toDomain(row: UsuarioRow): Usuario {

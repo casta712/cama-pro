@@ -8,7 +8,7 @@ import type { NotificacionRepository } from "../domain/ports/NotificacionReposit
 
 type NotificacionRow = {
   id: string;
-  camareroId: string;
+  usuarioId: string;
   tipo: TipoNotificacion;
   servicioId: string;
   payload: Prisma.JsonValue;
@@ -24,21 +24,21 @@ export class PrismaNotificacionRepository implements NotificacionRepository {
     return row ? this.toDomain(row) : null;
   }
 
-  async listarPorCamarero(
-    camareroId: string,
+  async listarPorUsuario(
+    usuarioId: string,
     limit?: number,
   ): Promise<Notificacion[]> {
     const rows = await this.prisma.notificacion.findMany({
-      where: { camareroId },
+      where: { usuarioId },
       orderBy: { creadaEn: "desc" },
       take: limit,
     });
     return rows.map((r) => this.toDomain(r));
   }
 
-  async contarNoLeidas(camareroId: string): Promise<number> {
+  async contarNoLeidas(usuarioId: string): Promise<number> {
     return this.prisma.notificacion.count({
-      where: { camareroId, leidaEn: null },
+      where: { usuarioId, leidaEn: null },
     });
   }
 
@@ -59,9 +59,9 @@ export class PrismaNotificacionRepository implements NotificacionRepository {
     });
   }
 
-  async marcarTodasLeidas(camareroId: string, ahora: Date): Promise<void> {
+  async marcarTodasLeidas(usuarioId: string, ahora: Date): Promise<void> {
     await this.prisma.notificacion.updateMany({
-      where: { camareroId, leidaEn: null },
+      where: { usuarioId, leidaEn: null },
       data: { leidaEn: ahora },
     });
   }
@@ -69,7 +69,7 @@ export class PrismaNotificacionRepository implements NotificacionRepository {
   private toRow(n: Notificacion) {
     return {
       id: n.id,
-      camareroId: n.camareroId,
+      usuarioId: n.usuarioId,
       tipo: n.tipo,
       servicioId: n.servicioId,
       payload: n.payload as unknown as Prisma.InputJsonValue,
@@ -81,7 +81,7 @@ export class PrismaNotificacionRepository implements NotificacionRepository {
   private toDomain(row: NotificacionRow): Notificacion {
     return Notificacion.reconstituir({
       id: row.id,
-      camareroId: row.camareroId,
+      usuarioId: row.usuarioId,
       tipo: row.tipo,
       servicioId: row.servicioId,
       payload: row.payload as unknown as PayloadNotificacion,

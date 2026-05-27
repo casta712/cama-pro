@@ -1,13 +1,16 @@
 import {
+  CamareroSinAsignacionError,
   CupoLlenoError,
   CuposInvalidosError,
   CuposPorDebajoDeAsignacionesError,
   DuracionInvalidaError,
   EdicionDuraConAsignacionesError,
   FechaInvalidaError,
+  LiberacionMuyTardiaError,
   ServicioMuyProximoError,
   ServicioNoDisponibleError,
   ServicioNoEditableError,
+  ServicioNoLiberableError,
   ServicioYaEnCursoError,
   TransicionEstadoInvalidaError,
   YaAsignadoError,
@@ -271,6 +274,51 @@ export class Servicio {
     if (cambios.notas !== undefined) {
       this.props.notas = cambios.notas?.trim() || null;
     }
+  }
+
+  /**
+   * El camarero libera su asignacion previamente aceptada.
+   *
+   * Reglas:
+   *  - Solo permitido si `estadoActual ∈ {PUBLICADO, CUBIERTO}`. Si el
+   *    servicio esta EN_CURSO, FINALIZADO o CANCELADO no tiene sentido.
+   *  - Misma antelacion minima que `crear` (3h): liberar al limite no le da
+   *    margen al gestor para buscar reemplazo.
+   *  - El camarero debe tener efectivamente una asignacion en este servicio.
+   *  - Si el servicio estaba CUBIERTO, vuelve a PUBLICADO al liberar.
+   *
+   * Devuelve el id de la asignacion borrada (necesario para que el repo
+   * lo elimine fisicamente) y si el servicio reverto a PUBLICADO (util
+   * para metricas / logs cross-context).
+   */
+  liberarPorCamarero(
+    camareroId: string,
+    ahora: Date = new Date(),
+  ): { asignacionId: string; volvioAPublicado: boolean } {
+    const efectivo = this.estadoActual(ahora);
+    if (efectivo !== "PUBLICADO" && efectivo !== "CUBIERTO") {
+      throw new ServicioNoLiberableError(efectivo);
+    }
+    if (ahora.getTime() + ANTELACION_MINIMA_MS > this.props.fechaInicio.getTime()) {
+      throw new LiberacionMuyTardiaError(ANTELACION_MINIMA_HORAS);
+    }
+
+    const idx = this.props.asignaciones.findIndex(
+      (a) => a.camareroId === camareroId,
+    );
+    if (idx === -1) {
+      throw new CamareroSinAsignacionError();
+    }
+    const removed = this.props.asignaciones[idx]!;
+    this.props.asignaciones.splice(idx, 1);
+
+    let volvioAPublicado = false;
+    if (this.props.estado === "CUBIERTO") {
+      this.props.estado = "PUBLICADO";
+      volvioAPublicado = true;
+    }
+
+    return { asignacionId: removed.id, volvioAPublicado };
   }
 
   cancelar(ahora: Date = new Date()): void {

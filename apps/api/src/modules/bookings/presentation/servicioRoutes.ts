@@ -29,6 +29,12 @@ export function servicioRoutes(
   router.get("/disponibles", deps.authMiddleware, deps.requireCamarero, controller.listarDisponiblesHandler);
   router.get("/mis-asignaciones", deps.authMiddleware, deps.requireCamarero, controller.misAsignacionesHandler);
   router.post("/:id/aceptar", deps.authMiddleware, deps.requireCamarero, controller.aceptarHandler);
+  router.delete(
+    "/:id/mi-asignacion",
+    deps.authMiddleware,
+    deps.requireCamarero,
+    controller.liberarAsignacionHandler,
+  );
 
   // Detalle accesible a cualquier usuario autenticado (gestor o camarero).
   // Declarada al final para que /disponibles y /mis-asignaciones no caigan

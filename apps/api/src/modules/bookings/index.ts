@@ -8,3 +8,7 @@ export type {
   CambiosBlandos,
   CambioCampo,
 } from "./domain/ports/NotificadorDeCambioServicio.js";
+export type {
+  NotificadorDeMovimientoAsignacion,
+  NotificarLiberacionInput,
+} from "./domain/ports/NotificadorDeMovimientoAsignacion.js";

@@ -3,14 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { contarMisAvisosNoLeidos } from "./avisosApi.js";
 
 /**
- * Boton-icono que vive en el header del camarero. Muestra un badge con el
- * numero de avisos no leidos. Polling suave cada 60s y refresca al volver
- * la pestaña al foco para evitar que el camarero se quede con un contador
- * obsoleto tras una accion del gestor.
+ * Boton-icono del header. Muestra un badge con el numero de avisos no
+ * leidos. Sirve tanto al camarero (cambios sobre sus servicios) como al
+ * gestor (liberacion de camareros). Polling cada 60s y refresca al
+ * volver la pestaña al foco.
  */
 export function AvisosCampana(): JSX.Element {
   const { data } = useQuery({
-    queryKey: ["camarero", "avisos", "count"],
+    queryKey: ["avisos", "count"],
     queryFn: contarMisAvisosNoLeidos,
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,

@@ -105,6 +105,32 @@ export class CamareroNoActivoError extends DomainError {
   }
 }
 
+export class ServicioNoLiberableError extends DomainError {
+  readonly code = "SERVICIO_NO_LIBERABLE";
+  override readonly httpStatus = 409;
+  constructor(estado: EstadoServicio) {
+    super(`No se puede liberar la asignacion: el servicio esta en estado ${estado}`);
+  }
+}
+
+export class LiberacionMuyTardiaError extends DomainError {
+  readonly code = "LIBERACION_MUY_TARDIA";
+  override readonly httpStatus = 422;
+  constructor(horasMinimas: number) {
+    super(
+      `Para liberar una asignacion hay que avisar con al menos ${horasMinimas} horas de antelacion`,
+    );
+  }
+}
+
+export class CamareroSinAsignacionError extends DomainError {
+  readonly code = "CAMARERO_SIN_ASIGNACION";
+  override readonly httpStatus = 404;
+  constructor() {
+    super("No tienes asignacion en este servicio");
+  }
+}
+
 export class CamareroConServicioSolapadoError extends DomainError {
   readonly code = "CAMARERO_CON_SERVICIO_SOLAPADO";
   override readonly httpStatus = 409;

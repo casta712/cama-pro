@@ -17,11 +17,11 @@ function fakeRepo(initial: Notificacion[]): NotificacionRepository {
   const byId = new Map(initial.map((n) => [n.id, n] as const));
   return {
     findById: async (id) => byId.get(id) ?? null,
-    listarPorCamarero: async (camId) =>
-      Array.from(byId.values()).filter((n) => n.camareroId === camId),
-    contarNoLeidas: async (camId) =>
+    listarPorUsuario: async (uid) =>
+      Array.from(byId.values()).filter((n) => n.usuarioId === uid),
+    contarNoLeidas: async (uid) =>
       Array.from(byId.values()).filter(
-        (n) => n.camareroId === camId && !n.estaLeida,
+        (n) => n.usuarioId === uid && !n.estaLeida,
       ).length,
     save: async (n) => {
       byId.set(n.id, n);
@@ -38,18 +38,18 @@ function fakeRepo(initial: Notificacion[]): NotificacionRepository {
 function avisoNoLeido(): Notificacion {
   return Notificacion.crearCancelacion({
     id: "n1",
-    camareroId: "c1",
+    usuarioId: "u1",
     servicioId: "s1",
     payload: { servicio: SNAPSHOT },
   });
 }
 
 describe("MarcarAvisoComoLeido", () => {
-  it("marca un aviso del propio camarero como leido", async () => {
+  it("marca un aviso del propio usuario como leido", async () => {
     const repo = fakeRepo([avisoNoLeido()]);
     const uc = new MarcarAvisoComoLeido(repo);
 
-    await uc.execute({ camareroId: "c1", avisoId: "n1" });
+    await uc.execute({ usuarioId: "u1", avisoId: "n1" });
 
     const persistido = await repo.findById("n1");
     expect(persistido!.estaLeida).toBe(true);
@@ -59,8 +59,8 @@ describe("MarcarAvisoComoLeido", () => {
     const repo = fakeRepo([avisoNoLeido()]);
     const uc = new MarcarAvisoComoLeido(repo);
 
-    await uc.execute({ camareroId: "c1", avisoId: "n1" });
-    await uc.execute({ camareroId: "c1", avisoId: "n1" });
+    await uc.execute({ usuarioId: "u1", avisoId: "n1" });
+    await uc.execute({ usuarioId: "u1", avisoId: "n1" });
 
     const persistido = await repo.findById("n1");
     expect(persistido!.estaLeida).toBe(true);
@@ -71,16 +71,16 @@ describe("MarcarAvisoComoLeido", () => {
     const uc = new MarcarAvisoComoLeido(repo);
 
     await expect(
-      uc.execute({ camareroId: "c1", avisoId: "fantasma" }),
+      uc.execute({ usuarioId: "u1", avisoId: "fantasma" }),
     ).rejects.toThrow(NotFoundError);
   });
 
-  it("403 si el aviso es de otro camarero (no filtra existencia con NotFound)", async () => {
+  it("403 si el aviso es de otro usuario (no filtra existencia con NotFound)", async () => {
     const repo = fakeRepo([avisoNoLeido()]);
     const uc = new MarcarAvisoComoLeido(repo);
 
     await expect(
-      uc.execute({ camareroId: "otro", avisoId: "n1" }),
+      uc.execute({ usuarioId: "otro", avisoId: "n1" }),
     ).rejects.toThrow(ForbiddenError);
     const persistido = await repo.findById("n1");
     expect(persistido!.estaLeida).toBe(false);

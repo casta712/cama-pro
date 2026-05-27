@@ -1,15 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { ANTELACION_MINIMA_HORAS, Servicio } from "../domain/Servicio.js";
 import {
+  CamareroSinAsignacionError,
   CupoLlenoError,
   CuposInvalidosError,
   CuposPorDebajoDeAsignacionesError,
   DuracionInvalidaError,
   EdicionDuraConAsignacionesError,
   FechaInvalidaError,
+  LiberacionMuyTardiaError,
   ServicioMuyProximoError,
   ServicioNoDisponibleError,
   ServicioNoEditableError,
+  ServicioNoLiberableError,
   ServicioYaEnCursoError,
   TransicionEstadoInvalidaError,
   YaAsignadoError,
@@ -441,5 +444,126 @@ describe("Servicio — cancelar() respeta el estado efectivo", () => {
     expect(() => s.cancelar(new Date("2026-05-24T23:00:00.000Z"))).toThrow(
       TransicionEstadoInvalidaError,
     );
+  });
+});
+
+describe("Servicio — liberarPorCamarero()", () => {
+  function servicioFuturoConCamarero(camareroId: string): Servicio {
+    const s = crear();
+    s.aceptar({ camareroId, asignacionId: `a-${camareroId}` });
+    return s;
+  }
+
+  it("borra la asignacion del camarero y devuelve el id de la asignacion", () => {
+    const s = servicioFuturoConCamarero("c1");
+    expect(s.cuposOcupados).toBe(1);
+
+    const { asignacionId, volvioAPublicado } = s.liberarPorCamarero("c1");
+
+    expect(asignacionId).toBe("a-c1");
+    expect(s.cuposOcupados).toBe(0);
+    expect(s.haAceptado("c1")).toBe(false);
+    expect(volvioAPublicado).toBe(false); // estaba PUBLICADO de origen
+  });
+
+  it("revierte CUBIERTO -> PUBLICADO si la liberacion deja cupos libres", () => {
+    const s = Servicio.crear({ ...baseInput, cuposTotales: 1 });
+    s.aceptar({ camareroId: "c1", asignacionId: "a1" });
+    expect(s.estado).toBe("CUBIERTO");
+
+    const { volvioAPublicado } = s.liberarPorCamarero("c1");
+
+    expect(s.estado).toBe("PUBLICADO");
+    expect(volvioAPublicado).toBe(true);
+    expect(s.cuposOcupados).toBe(0);
+  });
+
+  it("lanza CamareroSinAsignacionError si el camarero no esta asignado", () => {
+    const s = servicioFuturoConCamarero("c1");
+    expect(() => s.liberarPorCamarero("intruso")).toThrow(
+      CamareroSinAsignacionError,
+    );
+    // No se removio la asignacion existente
+    expect(s.haAceptado("c1")).toBe(true);
+  });
+
+  it("lanza ServicioNoLiberableError si el servicio ya esta EN_CURSO", () => {
+    const inicio = new Date("2026-05-24T20:00:00.000Z");
+    const s = Servicio.crear({
+      ...baseInput,
+      fechaInicio: inicio,
+      duracionHoras: 4,
+      ahora: new Date("2026-05-24T12:00:00.000Z"),
+    });
+    s.aceptar({
+      camareroId: "c1",
+      asignacionId: "a1",
+      ahora: new Date("2026-05-24T12:30:00.000Z"),
+    });
+
+    expect(() =>
+      s.liberarPorCamarero("c1", new Date("2026-05-24T21:00:00.000Z")),
+    ).toThrow(ServicioNoLiberableError);
+  });
+
+  it("lanza ServicioNoLiberableError si el servicio fue cancelado", () => {
+    const s = servicioFuturoConCamarero("c1");
+    s.cancelar();
+    expect(() => s.liberarPorCamarero("c1")).toThrow(ServicioNoLiberableError);
+  });
+
+  it("lanza LiberacionMuyTardiaError si se intenta liberar dentro de la ventana minima", () => {
+    const inicio = new Date("2026-05-24T20:00:00.000Z");
+    const s = Servicio.crear({
+      ...baseInput,
+      fechaInicio: inicio,
+      duracionHoras: 4,
+      ahora: new Date("2026-05-24T10:00:00.000Z"),
+    });
+    s.aceptar({
+      camareroId: "c1",
+      asignacionId: "a1",
+      ahora: new Date("2026-05-24T10:30:00.000Z"),
+    });
+
+    // 18:30 -> faltan 1.5h para el inicio (20:00), menor que 3h minimo
+    expect(() =>
+      s.liberarPorCamarero("c1", new Date("2026-05-24T18:30:00.000Z")),
+    ).toThrow(LiberacionMuyTardiaError);
+    expect(ANTELACION_MINIMA_HORAS).toBe(3);
+  });
+
+  it("permite liberar justo en el limite (>= 3h de antelacion)", () => {
+    const inicio = new Date("2026-05-24T20:00:00.000Z");
+    const s = Servicio.crear({
+      ...baseInput,
+      fechaInicio: inicio,
+      duracionHoras: 4,
+      ahora: new Date("2026-05-24T10:00:00.000Z"),
+    });
+    s.aceptar({
+      camareroId: "c1",
+      asignacionId: "a1",
+      ahora: new Date("2026-05-24T10:30:00.000Z"),
+    });
+
+    // 17:00 -> exactamente 3h antes del inicio
+    expect(() =>
+      s.liberarPorCamarero("c1", new Date("2026-05-24T17:00:00.000Z")),
+    ).not.toThrow();
+  });
+
+  it("solo afecta a la asignacion del camarero indicado (no toca las demas)", () => {
+    const s = Servicio.crear({ ...baseInput, cuposTotales: 3 });
+    s.aceptar({ camareroId: "c1", asignacionId: "a1" });
+    s.aceptar({ camareroId: "c2", asignacionId: "a2" });
+    s.aceptar({ camareroId: "c3", asignacionId: "a3" });
+
+    s.liberarPorCamarero("c2");
+
+    expect(s.cuposOcupados).toBe(2);
+    expect(s.haAceptado("c1")).toBe(true);
+    expect(s.haAceptado("c2")).toBe(false);
+    expect(s.haAceptado("c3")).toBe(true);
   });
 });

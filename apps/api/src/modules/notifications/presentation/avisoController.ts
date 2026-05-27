@@ -1,9 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import {
-  ForbiddenError,
-  UnauthorizedError,
-} from "../../../shared/errors/AppError.js";
+import { UnauthorizedError } from "../../../shared/errors/AppError.js";
 import type { ContarMisAvisosNoLeidos } from "../application/ContarMisAvisosNoLeidos.js";
 import type { ListarMisAvisos } from "../application/ListarMisAvisos.js";
 import type { MarcarAvisoComoLeido } from "../application/MarcarAvisoComoLeido.js";
@@ -22,8 +19,8 @@ export class AvisoController {
 
   listar = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const camareroId = requireCamarero(req);
-      const avisos = await this.listarUC.execute(camareroId);
+      const usuarioId = requireUsuario(req);
+      const avisos = await this.listarUC.execute(usuarioId);
       res.json({ items: avisos.map(toDTO) });
     } catch (err) {
       next(err);
@@ -36,8 +33,8 @@ export class AvisoController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const camareroId = requireCamarero(req);
-      const total = await this.contarUC.execute(camareroId);
+      const usuarioId = requireUsuario(req);
+      const total = await this.contarUC.execute(usuarioId);
       res.json({ total });
     } catch (err) {
       next(err);
@@ -50,10 +47,10 @@ export class AvisoController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const camareroId = requireCamarero(req);
+      const usuarioId = requireUsuario(req);
       const { id } = IdParam.parse(req.params);
       await this.marcarLeidoUC.execute({
-        camareroId,
+        usuarioId,
         avisoId: id,
       });
       res.status(204).send();
@@ -68,8 +65,8 @@ export class AvisoController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const camareroId = requireCamarero(req);
-      await this.marcarTodosUC.execute(camareroId);
+      const usuarioId = requireUsuario(req);
+      await this.marcarTodosUC.execute(usuarioId);
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -77,12 +74,9 @@ export class AvisoController {
   };
 }
 
-function requireCamarero(req: Request): string {
+function requireUsuario(req: Request): string {
   if (!req.usuario) throw new UnauthorizedError();
-  if (!req.usuario.camareroId) {
-    throw new ForbiddenError("Solo camareros pueden acceder a sus avisos");
-  }
-  return req.usuario.camareroId;
+  return req.usuario.id;
 }
 
 function toDTO(n: Notificacion) {

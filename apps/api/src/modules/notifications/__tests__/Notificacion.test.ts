@@ -11,7 +11,7 @@ describe("Notificacion (agregado)", () => {
   it("se crea no leida con tipo SERVICIO_CANCELADO", () => {
     const n = Notificacion.crearCancelacion({
       id: "n1",
-      camareroId: "c1",
+      usuarioId: "u1",
       servicioId: "s1",
       payload: { servicio: SNAPSHOT },
     });
@@ -23,7 +23,7 @@ describe("Notificacion (agregado)", () => {
   it("se crea no leida con tipo SERVICIO_EDITADO y conserva los cambios", () => {
     const n = Notificacion.crearEdicion({
       id: "n2",
-      camareroId: "c1",
+      usuarioId: "u1",
       servicioId: "s1",
       payload: {
         servicio: SNAPSHOT,
@@ -35,10 +35,26 @@ describe("Notificacion (agregado)", () => {
     expect(payload.cambios.uniforme?.despues).toBe("Blanco");
   });
 
+  it("se crea no leida con tipo SERVICIO_LIBERADO y conserva el actor camarero", () => {
+    const n = Notificacion.crearLiberacion({
+      id: "n3",
+      usuarioId: "u-gestor",
+      servicioId: "s1",
+      payload: {
+        servicio: SNAPSHOT,
+        camarero: { id: "c-bob", nombre: "Bob" },
+      },
+    });
+    expect(n.tipo).toBe("SERVICIO_LIBERADO");
+    expect(n.estaLeida).toBe(false);
+    const payload = n.payload as { camarero: { nombre: string } };
+    expect(payload.camarero.nombre).toBe("Bob");
+  });
+
   it("marcarLeida es idempotente: la segunda llamada no cambia leidaEn", () => {
     const n = Notificacion.crearCancelacion({
       id: "n1",
-      camareroId: "c1",
+      usuarioId: "u1",
       servicioId: "s1",
       payload: { servicio: SNAPSHOT },
     });

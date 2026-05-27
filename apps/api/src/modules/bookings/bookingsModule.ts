@@ -8,7 +8,9 @@ import {
   type VerificarCamareroFn,
 } from "./application/AceptarServicio.js";
 import { CancelarServicio } from "./application/CancelarServicio.js";
+import { LiberarAsignacion } from "./application/LiberarAsignacion.js";
 import type { NotificadorDeCambioServicio } from "./domain/ports/NotificadorDeCambioServicio.js";
+import type { NotificadorDeMovimientoAsignacion } from "./domain/ports/NotificadorDeMovimientoAsignacion.js";
 import { ObtenerServicio } from "./application/ObtenerServicio.js";
 import { ListarServiciosDisponibles } from "./application/ListarServiciosDisponibles.js";
 import { ListarServiciosDelGestor } from "./application/ListarServiciosDelGestor.js";
@@ -25,6 +27,7 @@ export interface BookingsModuleDeps {
   verificarCamarero: VerificarCamareroFn;
   obtenerCamarerosContacto: ObtenerCamarerosContactoFn;
   notificador: NotificadorDeCambioServicio;
+  notificadorMovimientoAsignacion: NotificadorDeMovimientoAsignacion;
   authMiddleware: RequestHandler;
   requireGestor: RequestHandler;
   requireCamarero: RequestHandler;
@@ -41,6 +44,11 @@ export function buildBookingsModule(deps: BookingsModuleDeps): BookingsModule {
   const editar = new EditarServicio(repo, deps.notificador);
   const aceptar = new AceptarServicio(repo, deps.verificarCamarero);
   const cancelar = new CancelarServicio(repo, deps.notificador);
+  const liberar = new LiberarAsignacion(
+    repo,
+    deps.notificadorMovimientoAsignacion,
+    deps.obtenerCamarerosContacto,
+  );
   const obtener = new ObtenerServicio(repo);
   const listarDisponibles = new ListarServiciosDisponibles(repo);
   const listarGestor = new ListarServiciosDelGestor(repo);
@@ -55,6 +63,7 @@ export function buildBookingsModule(deps: BookingsModuleDeps): BookingsModule {
     editar,
     aceptar,
     cancelar,
+    liberar,
     obtener,
     listarDisponibles,
     listarGestor,

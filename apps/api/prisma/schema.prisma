@@ -121,20 +121,22 @@ model Asignacion {
 enum TipoNotificacion {
   SERVICIO_CANCELADO
   SERVICIO_EDITADO
+  SERVICIO_LIBERADO
 }
 
 model Notificacion {
   id          String   @id @default(uuid())
-  camareroId  String
+  // Destinatario: cualquier Usuario (camarero o gestor).
+  usuarioId   String
   tipo        TipoNotificacion
   servicioId  String
-  // Delta especifico del evento. Cancelacion: snapshot minimo del servicio.
+  // Delta especifico del evento. Cancelacion/Liberacion: snapshot minimo + actor.
   // Edicion: { campo: { antes, despues } } solo para los campos que cambiaron.
   payload     Json
   leidaEn     DateTime?
   creadaEn    DateTime @default(now())
 
-  @@index([camareroId, leidaEn])
-  @@index([camareroId, creadaEn(sort: Desc)])
+  @@index([usuarioId, leidaEn])
+  @@index([usuarioId, creadaEn(sort: Desc)])
   @@map("notificaciones")
 }
