@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EstadoServicio, ServicioDTO } from "@cama-pro/shared-types";
 import { Badge } from "../shared/ui/Badge.js";
 import { Button } from "../shared/ui/Button.js";
@@ -16,7 +16,8 @@ import {
   nombreDiaLargo,
   nombreMes,
 } from "../shared/format.js";
-import { listarCamareros, listarServiciosGestor } from "./api.js";
+import { AsignacionesPanel } from "./AsignacionesPanel.js";
+import { cancelarServicio, listarCamareros, listarServiciosGestor } from "./api.js";
 
 const TONO_ESTADO: Record<EstadoServicio, "verde" | "ambar" | "terra" | "neutro" | "wine"> = {
   PUBLICADO: "ambar",
@@ -41,6 +42,7 @@ function capitalizar(s: string): string {
 }
 
 export function DashboardGestorPage(): JSX.Element {
+  const qc = useQueryClient();
   const servicios = useQuery({
     queryKey: ["gestor", "servicios", ""],
     queryFn: () => listarServiciosGestor(),
@@ -53,6 +55,22 @@ export function DashboardGestorPage(): JSX.Element {
     queryKey: ["gestor", "camareros", "ACTIVO"],
     queryFn: () => listarCamareros("ACTIVO"),
   });
+
+  const cancelar = useMutation({
+    mutationFn: cancelarServicio,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["gestor", "servicios"] }),
+  });
+
+  const onCancelar = (s: ServicioDTO): void => {
+    if (
+      !window.confirm(
+        `Cancelar el servicio del ${new Date(s.fechaInicio).toLocaleDateString("es-ES")}?`,
+      )
+    ) {
+      return;
+    }
+    cancelar.mutate(s.id);
+  };
 
   const ahora = useMemo(() => new Date(), []);
   const semana = useMemo(() => diasDeLaSemana(ahora), [ahora]);
@@ -153,7 +171,12 @@ export function DashboardGestorPage(): JSX.Element {
             {serviciosActivos.length > 0 && (
               <div className="flex flex-col gap-3 animate-fadeIn">
                 {serviciosActivos.slice(0, MAX_FILAS_LISTA).map((s) => (
-                  <FilaServicio key={s.id} servicio={s} />
+                  <FilaServicio
+                    key={s.id}
+                    servicio={s}
+                    onCancelar={onCancelar}
+                    cancelando={cancelar.isPending && cancelar.variables === s.id}
+                  />
                 ))}
                 {serviciosActivos.length > MAX_FILAS_LISTA && (
                   <Link
@@ -233,48 +256,90 @@ function DiaCell({ fecha, esHoy, count }: DiaCellProps): JSX.Element {
   );
 }
 
-function FilaServicio({ servicio }: { servicio: ServicioDTO }): JSX.Element {
+interface FilaServicioProps {
+  servicio: ServicioDTO;
+  onCancelar: (s: ServicioDTO) => void;
+  cancelando: boolean;
+}
+
+function FilaServicio({ servicio, onCancelar, cancelando }: FilaServicioProps): JSX.Element {
+  const [verEquipo, setVerEquipo] = useState(false);
   const fecha = new Date(servicio.fechaInicio);
   const puedeEditar = servicio.estado === "PUBLICADO";
+  const puedeCancelar =
+    servicio.estado === "PUBLICADO" || servicio.estado === "CUBIERTO";
+  const tieneAsignaciones = servicio.cuposOcupados > 0;
 
   return (
-    <div className="relative bg-bone border border-line rounded-card p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors hover:border-ink/40">
-      <Link
-        to={`/servicios/${servicio.id}`}
-        aria-label="Ver detalle del servicio"
-        className="absolute inset-0 z-10 rounded-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terra"
-      />
-      <div className="flex items-center gap-4 flex-1 min-w-0">
-        <DateChip fecha={fecha} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-display text-[19px] tracking-editorial leading-tight">
-              {etiquetaEvento(servicio.tipoEvento)}
-            </span>
-            <Badge tono={TONO_ESTADO[servicio.estado]}>
-              {ETIQUETA_ESTADO[servicio.estado]}
-            </Badge>
+    <div className="flex flex-col">
+      <div
+        className={[
+          "relative bg-bone border border-line rounded-card p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors hover:border-ink/40",
+          verEquipo ? "rounded-b-none" : "",
+        ].join(" ")}
+      >
+        <Link
+          to={`/servicios/${servicio.id}`}
+          aria-label="Ver detalle del servicio"
+          className="absolute inset-0 z-10 rounded-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-terra"
+        />
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <DateChip fecha={fecha} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="font-display text-[19px] tracking-editorial leading-tight">
+                {etiquetaEvento(servicio.tipoEvento)}
+              </span>
+              <Badge tono={TONO_ESTADO[servicio.estado]}>
+                {ETIQUETA_ESTADO[servicio.estado]}
+              </Badge>
+            </div>
+            <p className="text-xs text-ash mt-0.5 truncate">
+              {servicio.lugar.nombre} · {servicio.duracionHoras}h
+            </p>
           </div>
-          <p className="text-xs text-ash mt-0.5 truncate">
-            {servicio.lugar.nombre} · {servicio.duracionHoras}h
-          </p>
+        </div>
+        <div className="relative z-20 flex flex-col sm:flex-row sm:items-center gap-3 sm:shrink-0">
+          <div className="sm:w-32">
+            <CupoBar
+              ocupados={servicio.cuposOcupados}
+              totales={servicio.cuposTotales}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1 justify-end">
+            {tieneAsignaciones && (
+              <Button
+                variante="ghost"
+                tamano="sm"
+                onClick={() => setVerEquipo((v) => !v)}
+                aria-expanded={verEquipo}
+              >
+                {verEquipo ? "Ocultar equipo" : `Ver equipo (${servicio.cuposOcupados})`}
+              </Button>
+            )}
+            {puedeEditar && (
+              <Link to={`/gestor/servicios/${servicio.id}/editar`}>
+                <Button variante="ghost" tamano="sm">
+                  Editar
+                </Button>
+              </Link>
+            )}
+            {puedeCancelar && (
+              <Button
+                variante="ghost"
+                tamano="sm"
+                onClick={() => onCancelar(servicio)}
+                loading={cancelando}
+              >
+                Cancelar
+              </Button>
+            )}
+          </div>
         </div>
       </div>
-      <div className="relative z-20 flex items-center gap-4 sm:shrink-0">
-        <div className="flex-1 sm:w-32">
-          <CupoBar
-            ocupados={servicio.cuposOcupados}
-            totales={servicio.cuposTotales}
-          />
-        </div>
-        {puedeEditar && (
-          <Link to={`/gestor/servicios/${servicio.id}/editar`}>
-            <Button variante="ghost" tamano="sm">
-              Editar
-            </Button>
-          </Link>
-        )}
-      </div>
+      {verEquipo && tieneAsignaciones && (
+        <AsignacionesPanel servicioId={servicio.id} />
+      )}
     </div>
   );
 }
