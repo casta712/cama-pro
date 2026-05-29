@@ -12,16 +12,19 @@
     "dev:api": "npm run dev --workspace=@cama-pro/api",
     "dev:web": "npm run dev --workspace=@cama-pro/web",
     "build": "npm run build --workspaces --if-present",
+    "build:deploy": "npm run build -w @cama-pro/shared-types && npm run build -w @cama-pro/api && npm run build -w @cama-pro/web",
+    "start": "npm run start -w @cama-pro/api",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:migrate": "npm run db:migrate --workspace=@cama-pro/api",
+    "db:migrate:deploy": "npm run db:migrate:deploy -w @cama-pro/api",
     "db:studio": "npm run db:studio --workspace=@cama-pro/api",
     "db:seed": "npm run db:seed --workspace=@cama-pro/api"
   },
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
